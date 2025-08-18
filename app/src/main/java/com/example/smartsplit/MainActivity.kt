@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.smartsplit.navigation.AppNavigation
 import com.example.smartsplit.ui.theme.SmartSplitTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -39,16 +41,30 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SmartSplitTheme {
-                LaunchAnimationAppName()
+                AppNavigation()
             }
         }
     }
 }
 
 @Composable
-fun LaunchAnimationAppName() {
+fun LaunchAnimationAppName(navController: NavController) {
     val appName = "SmartSplit"
     val scope = rememberCoroutineScope()
+
+    // Track when animation is finished
+    var animationFinished by remember { mutableStateOf(false) }
+
+    // Navigate after animation
+    LaunchedEffect(animationFinished) {
+        if (animationFinished) {
+            delay(800) // small pause after animation
+            navController.navigate("login") {
+                popUpTo("splash") { inclusive = true } // remove splash from back stack
+            }
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -59,7 +75,7 @@ fun LaunchAnimationAppName() {
         ) {
             appName.forEachIndexed { index, char ->
                 var visible by remember { mutableStateOf(false) }
-                val offsetY = remember { Animatable(-500f) } // start far above screen
+                val offsetY = remember { Animatable(-500f) }
                 val alpha = remember { Animatable(0f) }
 
                 LaunchedEffect(Unit) {
@@ -73,6 +89,10 @@ fun LaunchAnimationAppName() {
                                 easing = BounceInterpolatorEasing
                             )
                         )
+                        // If last char finished → mark animation done
+                        if (index == appName.lastIndex) {
+                            animationFinished = true
+                        }
                     }
                     scope.launch {
                         alpha.animateTo(
@@ -98,6 +118,7 @@ fun LaunchAnimationAppName() {
         }
     }
 }
+
 
 val BounceInterpolatorEasing = Easing { fraction ->
 
