@@ -28,7 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.delay
 import com.example.smartsplit.R
 
-
 @Composable
 fun OnboardingScreen2() {
     var typedText by remember { mutableStateOf("") }
@@ -36,7 +35,9 @@ fun OnboardingScreen2() {
 
     var showCard by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(false) }
+    var showHeader by remember { mutableStateOf(false) }
 
+    // Typing effect
     LaunchedEffect(Unit) {
         typedText = ""
         targetText.forEachIndexed { index, _ ->
@@ -45,7 +46,10 @@ fun OnboardingScreen2() {
         }
     }
 
+    // Sequence of animations
     LaunchedEffect(Unit) {
+        delay(300)
+        showHeader = true
         delay(400)
         showText = true
         delay(600)
@@ -70,94 +74,102 @@ fun OnboardingScreen2() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // --- Top Text ---
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = "Add expenses",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF222222)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "You can split expenses with groups or with individuals.",
-                    fontSize = 16.sp,
-                    color = Color(0xFF666666),
-                    lineHeight = 22.sp
-                )
-            }
-
-            // --- Card ---
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            // --- Top Animated Text ---
+            AnimatedVisibility(
+                visible = showHeader,
+                enter = slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(durationMillis = 700)
+                ) + fadeIn(animationSpec = tween(700))
             ) {
                 Column(
-                    modifier = Modifier
-                        .padding(20.dp)
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ShoppingCart, // 🎬 movie icon
-                            contentDescription = "Movie Tickets",
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Groceries",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF222222)
-                        )
-                    }
+                    Text(
+                        text = "Add expenses",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF222222)
+                    )
+                    Spacer(modifier = Modifier.height(14.dp)) // More spacious
+                    Text(
+                        text = "You can split expenses with groups or with individuals.",
+                        fontSize = 17.sp,
+                        color = Color(0xFF666666),
+                        lineHeight = 24.sp
+                    )
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(30.dp)) // Space between header and card
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+            // --- Card with animation ---
+            AnimatedVisibility(
+                visible = showText,
+                enter = slideInHorizontally(
+                    initialOffsetX = { -it },
+                    animationSpec = tween(durationMillis = 600)
+                ) + fadeIn(animationSpec = tween(durationMillis = 600))
+            ) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .fillMaxWidth()
                     ) {
-                        Text(
-                            text = "$",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF222222)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        // Animated typing text
-                        Text(
-                            text = typedText,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF222222)
-                        )
-                        // Optional blinking cursor
-                        if (typedText.length < targetText.length) {
-                            Text(
-                                text = "|",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF4CAF50),
-                                modifier = Modifier.padding(start = 2.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ShoppingCart,
+                                contentDescription = "Groceries",
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(28.dp)
                             )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Groceries",
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF222222)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "$",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF222222)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // Typing animation number here
+                            TypingNumberAnimation("94.50")
                         }
                     }
                 }
             }
+
+        }
+
+            Spacer(modifier = Modifier.height(50.dp))
 
             // --- Pager Indicator ---
             Row(
@@ -173,7 +185,7 @@ fun OnboardingScreen2() {
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .background(Color(0xFF4CAF50), RoundedCornerShape(50)) // active
+                        .background(Color(0xFF4CAF50), RoundedCornerShape(50))
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
@@ -184,11 +196,45 @@ fun OnboardingScreen2() {
             }
         }
     }
+
+
+@Composable
+fun TypingNumberAnimation(targetText: String) {
+    var typedText by remember { mutableStateOf("") }
+
+    LaunchedEffect(targetText) {
+        typedText = ""
+        targetText.forEachIndexed { index, char ->
+            delay(250)
+            typedText = targetText.substring(0, index + 1)
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = typedText,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF222222)
+        )
+        if (typedText.length < targetText.length) {
+            Text(
+                text = "|",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF4CAF50),
+                modifier = Modifier.padding(start = 2.dp)
+            )
+        }
+    }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun OnboardingScreen1Preview2() {
+fun OnboardingScreen2Preview() {
     OnboardingScreen2()
 }
 

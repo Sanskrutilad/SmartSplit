@@ -176,13 +176,13 @@ fun OnboardingScreen1(
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .background(Color.LightGray, RoundedCornerShape(50))
+                        .background(Color(0xFF0D47A1), RoundedCornerShape(50))
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .background(Color(0xFF4CAF50), RoundedCornerShape(50)) // active
+                        .background(Color.LightGray, RoundedCornerShape(50)) // active
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
