@@ -2,6 +2,10 @@ package com.example.smartsplit.screens.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,10 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.smartsplit.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -23,10 +30,11 @@ fun OnboardingScreen1(
     userName: String = "Sanskruti"
 ) {
     var showCard by remember { mutableStateOf(false) }
-
-    // Trigger card after delay
+    var showText by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(800) // wait 0.8 sec before showing card
+        delay(400)
+        showText = true
+        delay(600)
         showCard = true
     }
 
@@ -35,6 +43,16 @@ fun OnboardingScreen1(
             .fillMaxSize()
             .background(Color(0xFFFFEBE0))
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.obimg1),
+            contentDescription = "Illustration",
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -42,33 +60,42 @@ fun OnboardingScreen1(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Welcome Text
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
+
+            // --- Animated Text ---
+            AnimatedVisibility(
+                visible = showText,
+                enter = slideInHorizontally(
+                    initialOffsetX = { -it }, // comes from left
+                    animationSpec = tween(600)
+                ) + fadeIn(animationSpec = tween(600))
             ) {
-                Text(
-                    text = "Hello $userName 👋",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF222222)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "Track your shared bills and see who owes whom.",
-                    fontSize = 17.sp,
-                    color = Color(0xFF666666),
-                    lineHeight = 22.sp
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Hello $userName 👋",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF222222)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Track your shared bills and see who owes whom.",
+                        fontSize = 17.sp,
+                        color = Color(0xFF666666),
+                        lineHeight = 22.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Animated Card (pops up after welcome)
+
             AnimatedVisibility(
                 visible = showCard,
-                enter = androidx.compose.animation.fadeIn(animationSpec = tween(600)) +
-                        androidx.compose.animation.expandVertically(animationSpec = tween(600))
+                enter = fadeIn(animationSpec = tween(600)) +
+                        expandVertically(animationSpec = tween(600))
             ) {
                 Card(
                     shape = RoundedCornerShape(24.dp),
@@ -141,22 +168,21 @@ fun OnboardingScreen1(
 
             Spacer(modifier = Modifier.height(150.dp))
 
+            // Indicators
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .background(Color.Blue, RoundedCornerShape(50))
+                        .background(Color.LightGray, RoundedCornerShape(50))
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .size(10.dp)
-                        .background(Color.LightGray, RoundedCornerShape(50))
+                        .background(Color(0xFF4CAF50), RoundedCornerShape(50)) // active
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
@@ -165,10 +191,10 @@ fun OnboardingScreen1(
                         .background(Color.LightGray, RoundedCornerShape(50))
                 )
             }
-
         }
     }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
