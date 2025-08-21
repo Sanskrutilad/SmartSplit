@@ -2,14 +2,13 @@ package com.example.smartsplit.screens.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -17,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -25,11 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
 import com.example.smartsplit.R
 
 @Composable
-fun OnboardingScreen2() {
+fun OnboardingScreen2(navController: NavHostController) {
     var typedText by remember { mutableStateOf("") }
     val targetText = "94.50"
 
@@ -60,6 +59,7 @@ fun OnboardingScreen2() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFEFF7F7))
+            .clickable{navController.navigate("onboardscreen3")}
     ) {
         Image(
             painter = painterResource(id = R.drawable.obimg2),
@@ -166,12 +166,7 @@ fun OnboardingScreen2() {
                     }
                 }
             }
-
-        }
-
-            Spacer(modifier = Modifier.height(50.dp))
-
-            // --- Pager Indicator ---
+            Spacer(modifier = Modifier.weight(1f))
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -194,6 +189,13 @@ fun OnboardingScreen2() {
                         .background(Color.LightGray, RoundedCornerShape(50))
                 )
             }
+
+        }
+
+
+
+            // --- Pager Indicator ---
+
         }
     }
 
@@ -232,9 +234,4 @@ fun TypingNumberAnimation(targetText: String) {
 }
 
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun OnboardingScreen2Preview() {
-    OnboardingScreen2()
-}
 

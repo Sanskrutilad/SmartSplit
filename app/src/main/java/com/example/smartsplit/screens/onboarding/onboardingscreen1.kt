@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,11 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.smartsplit.R
 import kotlinx.coroutines.delay
 
 @Composable
 fun OnboardingScreen1(
+    navController: NavController,
     userName: String = "Sanskruti"
 ) {
     var showCard by remember { mutableStateOf(false) }
@@ -42,6 +46,7 @@ fun OnboardingScreen1(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFEBE0))
+            .clickable{navController.navigate("onboardscreen2")}
     ) {
         Image(
             painter = painterResource(id = R.drawable.obimg1),
@@ -196,8 +201,3 @@ fun OnboardingScreen1(
 }
 
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun OnboardingScreen1Preview() {
-    OnboardingScreen1()
-}
