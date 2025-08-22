@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -29,23 +30,23 @@ fun HomeScreen(navController: NavHostController) {
             TopAppBar(
                 title = { },
                 actions = {
-                    IconButton(onClick = { /* Search action */ }) {
+                    IconButton(onClick = { }) {
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Search",
                             tint = Color(0xFF0077CC)
                         )
                     }
-                    IconButton(onClick = { /* Groups action */ }) {
+                    IconButton(onClick = { }) {
                         Icon(
-                            imageVector = Icons.Filled.Home,
+                            imageVector = Icons.Filled.Group,
                             contentDescription = "Groups",
                             tint = Color(0xFF0077CC)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = (Color(0xFFE6F2FF))
+                    containerColor = Color(0xFFE6F2FF)
                 )
             )
         },
@@ -54,7 +55,7 @@ fun HomeScreen(navController: NavHostController) {
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
-                    icon = { Icon(Icons.Default.Group, contentDescription = "Groups") },
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
                     label = { Text("Groups") }
                 )
                 NavigationBarItem(
@@ -76,6 +77,19 @@ fun HomeScreen(navController: NavHostController) {
                     label = { Text("Account") }
                 )
             }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { /* Add expense */ },
+                containerColor = Color(0xFF0077CC),
+                shape = RoundedCornerShape(50)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add Expense",
+                    tint = Color.White
+                )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -86,7 +100,7 @@ fun HomeScreen(navController: NavHostController) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Message stays here, not in TopAppBar
+            // Message stays here
             Text(
                 text = "You are all settled up!",
                 style = MaterialTheme.typography.titleMedium.copy(
@@ -135,28 +149,6 @@ fun HomeScreen(navController: NavHostController) {
                         )
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Add Expense button
-            Button(
-                onClick = { /* Add expense */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0077CC)
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Add Expense",
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Add expense", color = Color.White)
             }
         }
     }

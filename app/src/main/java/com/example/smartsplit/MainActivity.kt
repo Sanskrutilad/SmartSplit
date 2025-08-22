@@ -59,7 +59,7 @@ fun LaunchAnimationAppName(navController: NavController) {
     LaunchedEffect(animationFinished) {
         if (animationFinished) {
             delay(800) // small pause after animation
-            navController.navigate("login") {
+            navController.navigate("Welcomscreen") {
                 popUpTo("splash") { inclusive = true } // remove splash from back stack
             }
         }

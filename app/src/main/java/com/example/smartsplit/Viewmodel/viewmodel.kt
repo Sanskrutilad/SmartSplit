@@ -1,4 +1,4 @@
-package com.example.smartsplit.screens
+package com.example.smartsplit.Viewmodel
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -9,12 +9,10 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class LoginScreenViewModel() : ViewModel() {
-
     private val auth: FirebaseAuth = Firebase.auth
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val _loading = MutableLiveData(false)
@@ -72,8 +70,6 @@ class LoginScreenViewModel() : ViewModel() {
                 }
         }
     }
-
-
     private fun createUser(displayName: String?) {
         val userId = auth.currentUser?.uid ?: return
         val user = MUser(
@@ -112,8 +108,6 @@ class LoginScreenViewModel() : ViewModel() {
                 }
             }
     }
-
-
     private fun linkEmailPasswordIfMissing(email: String, password: String) {
         val normalizedEmail = email.trim().lowercase()
         FirebaseAuth.getInstance().fetchSignInMethodsForEmail(normalizedEmail)

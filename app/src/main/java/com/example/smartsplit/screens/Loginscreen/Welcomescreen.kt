@@ -1,4 +1,4 @@
-package com.example.smartsplit.screens
+package com.example.smartsplit.screens.Loginscreen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -18,9 +18,8 @@ import androidx.navigation.NavController
 import com.example.smartsplit.R
 
 @Composable
-fun LoginScreen(navController: NavController) {
-    val primaryColor = Color(0xFF2196F3) // 🔵 Blue
-    // val primaryColor = Color(0xFFFF9800) // 🟠 Orange (just switch when needed)
+fun Welcomscreen(navController: NavController) {
+    val primaryColor = Color(0xFF2196F3)
 
     // Background gradient
     val gradientBrush = Brush.verticalGradient(
@@ -42,16 +41,16 @@ fun LoginScreen(navController: NavController) {
         ) {
             // App Logo
             Image(
-                painter = painterResource(id = R.drawable.logo),
+                painter = painterResource(id = R.drawable.chatgpt_image_aug_22__2025__10_29_43_pm),
                 contentDescription = "App Logo",
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier.size(160.dp)
             )
 
             Spacer(modifier = Modifier.height(50.dp))
 
             // Sign up button
             Button(
-                onClick = { /* TODO: Navigate to Signup */ },
+                onClick = { navController.navigate("Signup") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -71,7 +70,7 @@ fun LoginScreen(navController: NavController) {
 
             // Log in button
             OutlinedButton(
-                onClick = { navController.navigate("onboardscreen1") },
+                onClick = { navController.navigate("loginscreen") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
