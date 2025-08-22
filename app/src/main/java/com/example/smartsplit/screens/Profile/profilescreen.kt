@@ -26,43 +26,47 @@ import androidx.compose.ui.tooling.preview.Preview
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.List
+import androidx.compose.ui.graphics.Brush
 import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController? = null) {
+fun ProfileScreen(navController: NavController) {
     val cardColor = MaterialTheme.colorScheme.surface
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
+            NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
                     selected = false,
-                    onClick = { /* Navigate to tricounts */ },
-                    icon = { Text("🔢", fontSize = 18.sp) },
-                    label = { Text("Tricounts") }
+                    onClick = { navController.navigate("Home")},
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
+                    label = { Text("Groups") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { /* Navigate to requests */ },
-                    icon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
-                    label = { Text("Requests") }
+                    onClick = { },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
+                    label = { Text("Friends") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { /* Navigate to free card */ },
-                    icon = { Icon(Icons.Default.CreditCard, contentDescription = null) },
-                    label = { Text("Free Card") }
+                    onClick = { },
+                    icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
+                    label = { Text("Activity") }
                 )
                 NavigationBarItem(
                     selected = true,
-                    onClick = { /* Already on profile */ },
-                    icon = { Icon(Icons.Default.Person, contentDescription = null, tint = Color.Blue) },
-                    label = { Text("Profile", color = Color.Blue) }
+                    onClick = {  },
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
+                    label = { Text("Account") }
                 )
             }
         }
@@ -71,7 +75,15 @@ fun ProfileScreen(navController: NavController? = null) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFF98bad5))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFFE6F2FF),
+                            Color(0xFFCCE5FF),
+                            Color(0xFFB3DAFF)
+                        )
+                    )
+                )
         ) {
             item {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -240,13 +252,5 @@ fun SettingsItem1(title: String, description: String, onClick: () -> Unit) {
             contentDescription = null,
             tint = Color.Gray
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SignupScreenPreview2() {
-    MaterialTheme {
-        ProfileScreen()
     }
 }

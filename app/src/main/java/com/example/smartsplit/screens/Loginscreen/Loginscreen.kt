@@ -1,6 +1,7 @@
 package com.example.smartsplit.screens.Loginscreen
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
@@ -31,12 +33,20 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    val accentColor = Color(0xFF2196F3)
     val loading by viewModel.loading.observeAsState(false)
+    val primaryColor = Color(0xFF2196F3) // 🔵 Blue
+    val accentColor = primaryColor
 
+    // 🌈 Gradient background
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            primaryColor.copy(alpha = 0.15f),
+            Color.White
+        )
+    )
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().background(gradientBrush)
             .padding(24.dp),
         verticalArrangement = Arrangement.Top
     ) {

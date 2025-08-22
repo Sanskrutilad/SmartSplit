@@ -171,7 +171,7 @@ fun OnboardingScreen1(
                 }
             }
 
-            Spacer(modifier = Modifier.height(150.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
             // Indicators
             Row(

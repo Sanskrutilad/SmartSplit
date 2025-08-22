@@ -1,6 +1,6 @@
 package com.example.smartsplit.screens.Homescreen
 
-
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,22 +9,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 
-
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun GroupSectionScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -37,16 +39,16 @@ fun HomeScreen(navController: NavHostController) {
                             tint = Color(0xFF0077CC)
                         )
                     }
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Filled.Group,
-                            contentDescription = "Groups",
-                            tint = Color(0xFF0077CC)
-                        )
-                    }
+//                    IconButton(onClick = { }) {
+//                        Icon(
+//                            imageVector = Icons.Filled.Group,
+//                            contentDescription = "Groups",
+//                            tint = Color(0xFF0077CC)
+//                        )
+//                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFE6F2FF)
+                    containerColor = Color.Transparent
                 )
             )
         },
@@ -72,7 +74,7 @@ fun HomeScreen(navController: NavHostController) {
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = { navController.navigate("profile")},
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
                     label = { Text("Account") }
                 )
@@ -91,65 +93,78 @@ fun HomeScreen(navController: NavHostController) {
                 )
             }
         }
-    ) { innerPadding ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFE6F2FF))
-                .padding(innerPadding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Message stays here
-            Text(
-                text = "You are all settled up!",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color = Color(0xFF0077CC)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFE6F2FF),
+                            Color(0xFFCCE5FF)
+                        )
+                    )
                 )
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            // Main message
+            Text(
+                text = "No groups yet",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF004C99)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Card for Non-group expenses
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(6.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+            Text(
+                text = "Create your first group to split expenses with friends!",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 24.dp),
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Primary button
+            Button(
+                onClick = {},
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0077CC),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(0.8f)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = Color(0xFF99CCFF),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Non-group expenses",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Color(0xFF005FA3)
-                            )
-                        )
-                        Text(
-                            text = "Settled up",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                }
+                Text(text = "Create Group", fontSize = 16.sp)
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Secondary button
+            OutlinedButton(
+                onClick = {  },
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(0.8f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF0077CC)
+                )
+            ) {
+                Text(text = "Join Group with Code", fontSize = 16.sp)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "💡 Tip: Use groups to manage trips, events, and shared expenses.",
+                fontSize = 14.sp,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
     }
 }
