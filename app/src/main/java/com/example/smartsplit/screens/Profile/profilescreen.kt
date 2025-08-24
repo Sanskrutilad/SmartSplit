@@ -125,11 +125,11 @@ fun ProfileScreen(navController: NavController) {
                     border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.4f)),
                     colors = CardDefaults.cardColors(containerColor = cardColor)
                 ) {
-                    SettingsItem1(title = "Name", description = "shrikant sharma") {}
+                    SettingsItem1(title = "Name", description = "shrikant sharma") {navController.navigate("changeName")}
                     Divider()
                     SettingsItem1(title = "Public Nickname", description = "shrikant sharma") {}
                     Divider()
-                    SettingsItem1(title = "Email", description = "sharmashri2004@gmail.com") {}
+                    SettingsItem1(title = "Email", description = "sharmashri2004@gmail.com") { navController.navigate("updateEmail") }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -161,9 +161,9 @@ fun ProfileScreen(navController: NavController) {
                 ) {
                     SettingsItem(title = "Notifications", description = "") {}
                     Divider()
-                    SettingsItem(title = "Language", description = "English") {}
+                    SettingsItem(title = "Language", description = "English") {navController.navigate("language")}
                     Divider()
-                    SettingsItem(title = "Dark Mode", description = "On") {}
+                    SettingsItem(title = "Dark Mode", description = "On") {navController.navigate("darkMode")}
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

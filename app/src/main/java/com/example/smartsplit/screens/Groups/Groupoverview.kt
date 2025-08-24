@@ -118,8 +118,8 @@ fun NewGroupScreen(navController: NavController) {
             modifier = Modifier.fillMaxWidth()
         ) {
             GroupChip("Settle up")
-            GroupChip("Trip Pass")
-            GroupChip("Charts")
+            GroupChip("Balance")
+            GroupChip("Total")
         }
 
         // ⬇️ Push content to center

@@ -1,5 +1,6 @@
 package com.example.smartsplit.screens.Profile
 
+import accentColor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,20 +22,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
 fun LanguageScreen(
-    onBackClick: () -> Unit = {},
+    navController : NavController,
     onLanguageClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White) // light mode background
-            .padding(16.dp)
+            .padding(18.dp)
     ) {
         // Top bar
         Row(
@@ -43,22 +46,26 @@ fun LanguageScreen(
                 .padding(bottom = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.Black, // dark icon for light background
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable { onBackClick() }
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Language",
-                color = Color.Black,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = accentColor
+                )
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Language",
+                    color = Color.Black,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
+
 
         // Current language title
         Text(
@@ -110,10 +117,4 @@ fun LanguageScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun SignupScreenPreview4() {
-    MaterialTheme {
-        LanguageScreen()
-    }
-}
+

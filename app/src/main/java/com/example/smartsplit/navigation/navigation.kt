@@ -11,7 +11,11 @@ import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
 import com.example.smartsplit.screens.Loginscreen.Welcomscreen
+import com.example.smartsplit.screens.Profile.ChangeNameScreen
+import com.example.smartsplit.screens.Profile.DarkModeSettingsScreen
+import com.example.smartsplit.screens.Profile.LanguageScreen
 import com.example.smartsplit.screens.Profile.ProfileScreen
+import com.example.smartsplit.screens.Profile.UpdateEmailScreen
 import com.example.smartsplit.screens.onboarding.OnboardingScreen1
 import com.example.smartsplit.screens.onboarding.OnboardingScreen2
 import com.example.smartsplit.screens.onboarding.OnboardingScreen3
@@ -20,7 +24,7 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "Welcomscreen") {
+    NavHost(navController = navController, startDestination = "profile") {
         composable("Welcomscreen") { Welcomscreen(navController) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable("onboardscreen1") { OnboardingScreen1(navController) }
@@ -32,5 +36,24 @@ fun AppNavigation() {
         composable("profile") { ProfileScreen(navController) }
         composable("creategroup") { CreateGroupScreen(navController) }
         composable("Gropuoverview") { NewGroupScreen(navController) }
+        composable("updateEmail") {
+            UpdateEmailScreen(
+                email = "",
+                onEmailChange = {},
+                navController = navController,
+                onNext = {})
+        }
+
+        composable("language") {
+            LanguageScreen(navController)
+        }
+
+        composable("changeName") {
+            ChangeNameScreen(navController)
+        }
+
+        composable("darkMode") {
+            DarkModeSettingsScreen(navController = navController)
+        }
     }
 }

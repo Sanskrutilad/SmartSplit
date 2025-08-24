@@ -18,13 +18,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateEmailScreen(
     email: String,
     onEmailChange: (String) -> Unit,
-    onBack: () -> Unit,
+    navController: NavController,
     onNext: (String) -> Unit
 ) {
     val isValid = remember(email) {
@@ -37,7 +38,7 @@ fun UpdateEmailScreen(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {navController.navigate("profile")}) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -143,16 +144,3 @@ fun UpdateEmailScreen(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0x000000)
-@Composable
-private fun UpdateEmailScreenPreview() {
-    var email by remember { mutableStateOf("sharmashri2004@gmail.com") }
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        UpdateEmailScreen(
-            email = email,
-            onEmailChange = { email = it },
-            onBack = {},
-            onNext = {}
-        )
-    }
-}

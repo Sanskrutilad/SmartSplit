@@ -1,4 +1,5 @@
 package com.example.smartsplit.screens.Profile
+import accentColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,11 +23,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+
 @Composable
 fun DarkModeSettingsScreen(
     selectedOption: String = "On",
     onOptionSelected: (String) -> Unit = {},
-    onBackClick: () -> Unit = {}
+    navController : NavController
 ) {
     val options = listOf("Automatic", "On", "Off")
 
@@ -34,30 +37,34 @@ fun DarkModeSettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White) // light mode bg
-            .padding(16.dp)
+            .padding(18.dp)
     ) {
         // Top bar
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.Black,
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable { onBackClick() }
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Dark mode",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            Spacer(Modifier.height(20.dp))
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = accentColor
+                )
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Dark Mode",
+                    color = Color.Black,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         // Radio options
@@ -91,10 +98,4 @@ fun DarkModeSettingsScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun SignupScreenPreview5() {
-    MaterialTheme {
-        DarkModeSettingsScreen()
-    }
-}
+

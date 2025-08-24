@@ -1,5 +1,6 @@
 package com.example.smartsplit.screens.Profile
 
+import accentColor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,12 +22,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun ChangeNameScreen(
-    onBackClick: () -> Unit = {},
+    navController: NavController,
     onSaveClick: (String) -> Unit = {}
 ) {
     var name by remember { mutableStateOf("shrikant sharma") }
@@ -35,7 +37,7 @@ fun ChangeNameScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White) // light mode background
-            .padding(16.dp),
+            .padding(18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Back button (top-left)
@@ -43,16 +45,15 @@ fun ChangeNameScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.Black,
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable { onBackClick() }
-            )
+            IconButton(onClick = {navController.popBackStack()}) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = accentColor
+                )
+            }
         }
 
         // Profile icon (use material icon instead of painterResource)
@@ -118,10 +119,4 @@ fun ChangeNameScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun SignupScreenPreview3() {
-    MaterialTheme {
-        ChangeNameScreen()
-    }
-}
+
