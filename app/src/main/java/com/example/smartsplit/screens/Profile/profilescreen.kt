@@ -46,7 +46,7 @@ fun ProfileScreen(navController: NavController) {
             NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate("Home")},
+                    onClick = { navController.navigate("Group")},
                     icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
                     label = { Text("Groups") }
                 )
@@ -60,7 +60,7 @@ fun ProfileScreen(navController: NavController) {
                     selected = false,
                     onClick = { },
                     icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("Activity") }
+                    label = { Text("History") }
                 )
                 NavigationBarItem(
                     selected = true,

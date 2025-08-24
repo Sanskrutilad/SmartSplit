@@ -1,10 +1,12 @@
 package com.example.smartsplit.navigation
 
+import CreateGroupScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.smartsplit.LaunchAnimationAppName
+import com.example.smartsplit.screens.Groups.NewGroupScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
@@ -18,7 +20,7 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "splash") {
+    NavHost(navController = navController, startDestination = "Welcomscreen") {
         composable("Welcomscreen") { Welcomscreen(navController) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable("onboardscreen1") { OnboardingScreen1(navController) }
@@ -28,5 +30,7 @@ fun AppNavigation() {
         composable("Signup") { SignupScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
+        composable("creategroup") { CreateGroupScreen(navController) }
+        composable("Gropuoverview") { NewGroupScreen(navController) }
     }
 }

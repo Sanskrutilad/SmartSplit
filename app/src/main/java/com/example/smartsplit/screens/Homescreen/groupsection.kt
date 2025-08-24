@@ -30,7 +30,11 @@ fun GroupSectionScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {Text("SmartSplit",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0077CC)
+                    )) },
                 actions = {
                     IconButton(onClick = { }) {
                         Icon(
@@ -70,7 +74,7 @@ fun GroupSectionScreen(navController: NavHostController) {
                     selected = false,
                     onClick = { },
                     icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("Activity") }
+                    label = { Text("History") }
                 )
                 NavigationBarItem(
                     selected = false,
@@ -132,7 +136,7 @@ fun GroupSectionScreen(navController: NavHostController) {
 
             // Primary button
             Button(
-                onClick = {},
+                onClick = {navController.navigate("creategroup")},
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0077CC),
                     contentColor = Color.White

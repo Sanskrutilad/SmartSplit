@@ -70,7 +70,7 @@ fun Welcomscreen(navController: NavController) {
 
             // Log in button
             OutlinedButton(
-                onClick = { navController.navigate("loginscreen") },
+                onClick = { navController.navigate("login") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -85,7 +85,7 @@ fun Welcomscreen(navController: NavController) {
 
             // Google sign-in button
             OutlinedButton(
-                onClick = { /* TODO: Google Sign In */ },
+                onClick = {  },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),

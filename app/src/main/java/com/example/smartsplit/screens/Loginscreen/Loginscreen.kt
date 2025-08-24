@@ -132,7 +132,7 @@ fun LoginScreen(
                     Log.d("Login", "Inputs valid → calling Firebase signIn")
                     viewModel.signInWithEmailAndPassword(email, password) {
                         Log.d("Login", "Login success → navigating to Home")
-                        navController.navigate("home") {
+                        navController.navigate("Group") {
                             popUpTo("loginscreen") { inclusive = true }
                         }
                     }

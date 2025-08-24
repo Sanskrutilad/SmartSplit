@@ -92,6 +92,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     implementation("androidx.compose.runtime:runtime-livedata:1.7.0")
     // Debug
+    implementation("com.google.accompanist:accompanist-flowlayout:0.36.0")
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
