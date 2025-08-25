@@ -1,3 +1,5 @@
+package com.example.smartsplit.screens.Groups
+
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -5,11 +7,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,7 +49,9 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
         "Travel" to Icons.Default.Flight,
         "Family" to Icons.Default.Home,
         "Friends" to Icons.Default.Group,
-        "Work" to Icons.Default.Work
+        "Work" to Icons.Default.Work,
+        "Grocery" to Icons.Default.ShoppingCart,
+        "Other" to Icons.Default.NoteAdd
     )
 
     Column(
