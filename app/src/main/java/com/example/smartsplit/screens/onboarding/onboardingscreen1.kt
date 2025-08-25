@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,16 +25,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.smartsplit.R
+import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.Viewmodel.MUser
 import kotlinx.coroutines.delay
 
 @Composable
 fun OnboardingScreen1(
     navController: NavController,
-    userName: String = "Sanskruti"
+    isSignup: Boolean = false,
+    userName: String = "Sanskruti",
+    viewModel: LoginScreenViewModel = viewModel()
 ) {
+    val user by viewModel.user.observeAsState()
+
+    // Fetch data when screen loads
+    LaunchedEffect(Unit) {
+        viewModel.getUserData()
+    }
+    val firstName = remember(user) {
+        user?.displayName?.split(" ")?.firstOrNull()
+            ?: userName
+    }
     var showCard by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -41,7 +58,6 @@ fun OnboardingScreen1(
         delay(600)
         showCard = true
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -57,7 +73,6 @@ fun OnboardingScreen1(
                 .fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -65,7 +80,6 @@ fun OnboardingScreen1(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             // --- Animated Text ---
             AnimatedVisibility(
                 visible = showText,
@@ -77,13 +91,13 @@ fun OnboardingScreen1(
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start
-                ) {
-                    Text(
-                        text = "Hello $userName 👋",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF222222)
-                    )
+                ) {Text(
+                    text = if (isSignup) "Welcome $firstName 👋"
+                    else "Welcome back $firstName 👋",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF222222)
+                )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = "Track your shared bills and see who owes whom.",
@@ -171,7 +185,7 @@ fun OnboardingScreen1(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(350.dp))
 
             // Indicators
             Row(

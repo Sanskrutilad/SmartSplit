@@ -30,23 +30,27 @@ import androidx.navigation.NavController
 
 @Composable
 fun LanguageScreen(
-    navController : NavController,
-    onLanguageClick: () -> Unit = {}
+    navController: NavController
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedLanguage by remember { mutableStateOf("English") } // default
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // light mode background
+            .background(Color.White)
             .padding(18.dp)
     ) {
-        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.padding(top = 48.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
@@ -55,17 +59,17 @@ fun LanguageScreen(
             }
 
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(top = 48.dp)
             ) {
                 Text(
                     text = "Language",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
             }
         }
-
 
         // Current language title
         Text(
@@ -76,20 +80,20 @@ fun LanguageScreen(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // Language option (English card)
+        // Language option card
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFF5F5F5)) // light gray card
-                .clickable { onLanguageClick() }
+                .background(Color(0xFFF5F5F5))
+                .clickable { showDialog = true } // show dialog on click
                 .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
                 Text(
-                    text = "English",
+                    text = selectedLanguage,
                     color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -106,15 +110,49 @@ fun LanguageScreen(
                 tint = Color.Gray
             )
         }
+
         Spacer(modifier = Modifier.height(16.dp))
+
         // Info text
         Text(
-            text = "The tricount app's default language is English.\n" +
-                    "All other languages are translated from English using AI.",
+            text = "The app's default language is English.\nAll other languages are translated from English.",
             color = Color.DarkGray,
             fontSize = 13.sp
         )
     }
+
+    // ✅ Dialog to choose language
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Choose Language") },
+            text = {
+                Column {
+                    listOf("English", "Hindi", "Marathi").forEach { lang ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedLanguage = lang
+                                    showDialog = false
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedLanguage == lang,
+                                onClick = {
+                                    selectedLanguage = lang
+                                    showDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = lang, fontSize = 16.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
 }
-
-

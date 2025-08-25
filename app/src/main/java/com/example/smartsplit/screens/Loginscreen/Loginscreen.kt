@@ -1,6 +1,7 @@
 package com.example.smartsplit.screens.Loginscreen
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
@@ -36,8 +38,17 @@ fun LoginScreen(
     val loading by viewModel.loading.observeAsState(false)
     val primaryColor = Color(0xFF2196F3) // 🔵 Blue
     val accentColor = primaryColor
+    val errorMessage by viewModel.errorMessage.observeAsState()
+    var showErrorDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-    // 🌈 Gradient background
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            showErrorDialog = true
+        }
+    }
+
+
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
             primaryColor.copy(alpha = 0.15f),
@@ -118,7 +129,25 @@ fun LoginScreen(
                 .align(Alignment.End)
                 .clickable {
                     Log.d("Login", "Forgot password clicked for email=$email")
-                    // TODO: handle password reset
+                    if (email.isNotBlank()) {
+                        viewModel.resetPassword(email) { success ->
+                            if (success) {
+                                Toast.makeText(
+                                    context,
+                                    "Check your inbox to reset password",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to send reset email",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(context, "Enter your email first", Toast.LENGTH_SHORT).show()
+                    }
                 }
         )
 
@@ -127,18 +156,14 @@ fun LoginScreen(
         // Log in Button
         Button(
             onClick = {
-                Log.d("Login", "Login button clicked with email=$email, passwordLength=${password.length}")
                 if (email.isNotBlank() && password.isNotBlank()) {
-                    Log.d("Login", "Inputs valid → calling Firebase signIn")
                     viewModel.signInWithEmailAndPassword(email, password) {
-                        Log.d("Login", "Login success → navigating to Home")
-                        navController.navigate("Group") {
+                        navController.navigate("onboardscreen1?isSignup=false") {
                             popUpTo("loginscreen") { inclusive = true }
                         }
                     }
                 } else {
-                    if (email.isBlank()) Log.e("Login", "Login failed → Email is blank")
-                    if (password.isBlank()) Log.e("Login", "Login failed → Password is blank")
+                    viewModel.clearError()
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -155,6 +180,13 @@ fun LoginScreen(
             } else {
                 Text("Log in", color = Color.White)
             }
+        }
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = Color.Red,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }

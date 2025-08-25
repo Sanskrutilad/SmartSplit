@@ -2,9 +2,11 @@ package com.example.smartsplit.navigation
 
 import CreateGroupScreen
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.smartsplit.LaunchAnimationAppName
 import com.example.smartsplit.screens.Groups.NewGroupScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
@@ -13,6 +15,7 @@ import com.example.smartsplit.screens.Loginscreen.SignupScreen
 import com.example.smartsplit.screens.Loginscreen.Welcomscreen
 import com.example.smartsplit.screens.Profile.ChangeNameScreen
 import com.example.smartsplit.screens.Profile.DarkModeSettingsScreen
+import com.example.smartsplit.screens.Profile.DeleteAccount
 import com.example.smartsplit.screens.Profile.LanguageScreen
 import com.example.smartsplit.screens.Profile.ProfileScreen
 import com.example.smartsplit.screens.Profile.UpdateEmailScreen
@@ -24,10 +27,20 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "profile") {
+    NavHost(navController = navController, startDestination = "splash") {
         composable("Welcomscreen") { Welcomscreen(navController) }
         composable("splash") { LaunchAnimationAppName(navController) }
-        composable("onboardscreen1") { OnboardingScreen1(navController) }
+        composable(
+            "onboardscreen1?isSignup={isSignup}",
+            arguments = listOf(navArgument("isSignup") {
+                type = NavType.BoolType
+                defaultValue = false
+            })
+        ) { backStackEntry ->
+            val isSignup = backStackEntry.arguments?.getBoolean("isSignup") ?: false
+            OnboardingScreen1(navController, isSignup)
+        }
+
         composable("onboardscreen2") { OnboardingScreen2(navController) }
         composable("onboardscreen3") { OnboardingScreen3(navController) }
         composable("Group") { GroupSectionScreen(navController) }
@@ -38,10 +51,7 @@ fun AppNavigation() {
         composable("Gropuoverview") { NewGroupScreen(navController) }
         composable("updateEmail") {
             UpdateEmailScreen(
-                email = "",
-                onEmailChange = {},
-                navController = navController,
-                onNext = {})
+                navController = navController)
         }
 
         composable("language") {
@@ -55,5 +65,9 @@ fun AppNavigation() {
         composable("darkMode") {
             DarkModeSettingsScreen(navController = navController)
         }
+        composable("deletaccount") {
+            DeleteAccount(navController = navController)
+        }
+
     }
 }

@@ -166,7 +166,7 @@ fun OnboardingScreen2(navController: NavHostController) {
                     }
                 }
             }
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(350.dp))
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -194,10 +194,10 @@ fun OnboardingScreen2(navController: NavHostController) {
 
 
 
-            // --- Pager Indicator ---
+        // --- Pager Indicator ---
 
-        }
     }
+}
 
 
 @Composable

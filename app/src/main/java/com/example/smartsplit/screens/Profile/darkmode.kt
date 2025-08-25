@@ -27,7 +27,7 @@ import androidx.navigation.NavController
 
 @Composable
 fun DarkModeSettingsScreen(
-    selectedOption: String = "On",
+    selectedOption: String = "Off",
     onOptionSelected: (String) -> Unit = {},
     navController : NavController
 ) {
@@ -39,7 +39,6 @@ fun DarkModeSettingsScreen(
             .background(Color.White) // light mode bg
             .padding(18.dp)
     ) {
-        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,7 +46,7 @@ fun DarkModeSettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(Modifier.height(20.dp))
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = { navController.popBackStack() },  modifier = Modifier.padding(top = 48.dp)) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
@@ -56,13 +55,14 @@ fun DarkModeSettingsScreen(
             }
 
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth() .padding(top = 48.dp)
             ) {
                 Text(
                     text = "Dark Mode",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
             }
         }

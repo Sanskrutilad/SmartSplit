@@ -39,7 +39,7 @@ import com.example.smartsplit.R
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OnboardingScreen3(navController: NavController) {
-    Box(Modifier.fillMaxSize().clickable{navController.navigate("Home")}){
+    Box(Modifier.fillMaxSize().clickable{navController.navigate("Group")}){
         Image(
             painter = painterResource(id = R.drawable.obimg4),
             contentDescription = "Illustration",
@@ -141,7 +141,7 @@ fun OnboardingScreen3(navController: NavController) {
                     }
                 }
             }
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(100.dp))
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()

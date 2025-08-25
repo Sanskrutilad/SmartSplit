@@ -1,5 +1,6 @@
 package com.example.smartsplit.screens.Profile
 
+import android.util.Log
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import android.util.Patterns
@@ -8,66 +9,99 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateEmailScreen(
-    email: String,
-    onEmailChange: (String) -> Unit,
     navController: NavController,
-    onNext: (String) -> Unit
+    viewModel: LoginScreenViewModel = viewModel()
 ) {
-    val isValid = remember(email) {
-        Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+    val user by viewModel.user.observeAsState()
+    var email by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(user) {
+        email = user?.email ?: ""
     }
 
+    val primaryColor = Color(0xFF2196F3)
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            primaryColor.copy(alpha = 0.15f),
+            Color.White
+        )
+    )
+
+    val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = {navController.navigate("profile")}) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = primaryColor
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black
+                    containerColor = Color.Transparent
                 )
             )
         },
         bottomBar = {
-            // Bottom “Next” button
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .background(Color.Black)
+                    .background(Color.Transparent)
                     .padding(16.dp)
             ) {
                 Button(
-                    onClick = { onNext(email.trim()) },
+                    onClick = {
+                        val newEmail = email.trim()
+                        viewModel.updateUserEmail(
+                            newEmail,
+                            onSuccess = {
+                                dialogMessage = "Verification email has been sent to $newEmail.\nPlease verify before logging in again."
+                                showDialog = true
+                            },
+                            onFailure = { e ->
+                                dialogMessage = "Failed to send verification email: ${e.message}"
+                                showDialog = true
+                            }
+                        )
+                    },
                     enabled = isValid,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
                 ) {
-                    Text("Next")
+                    Text("Next", color = Color.White)
                 }
             }
         }
@@ -75,15 +109,15 @@ fun UpdateEmailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(brush = gradientBrush)
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = "Update Email Address",
-                color = Color.White,
+                color = Color.Black,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -93,10 +127,8 @@ fun UpdateEmailScreen(
 
             Text(
                 text = "This will change the email address you use\n" +
-                        "to log in. In the future, you may need to\n" +
-                        "choose email login instead of signing in with\n" +
-                        "Apple, Facebook, or Google.",
-                color = Color(0xFFB0B0B0),
+                        "to log in...",
+                color = Color.Gray,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -104,43 +136,51 @@ fun UpdateEmailScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Email input chip-like field
             TextField(
                 value = email,
-                onValueChange = onEmailChange,
+                onValueChange = { email = it },
                 singleLine = true,
-                placeholder = { Text("name@example.com") },
+                placeholder = { Text("name@example.com", color = Color.Gray) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 trailingIcon = {
                     if (email.isNotEmpty()) {
-                        IconButton(onClick = { onEmailChange("") }) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = "Clear"
-                            )
+                        IconButton(onClick = { email = "" }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Clear", tint = primaryColor)
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFF1E1E1E),
-                    unfocusedContainerColor = Color(0xFF1E1E1E),
-                    disabledContainerColor = Color(0xFF1E1E1E),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedPlaceholderColor = Color(0xFF8E8E93),
-                    unfocusedPlaceholderColor = Color(0xFF8E8E93),
-                    focusedTrailingIconColor = Color(0xFF8E8E93),
-                    unfocusedTrailingIconColor = Color(0xFF8E8E93)
+                    focusedContainerColor = Color.White.copy(alpha = 0.2f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
+                    cursorColor = primaryColor,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
             )
         }
     }
-}
 
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Email Update", color = Color.Black) },
+            text = { Text(dialogMessage, color = Color.Black) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    if (dialogMessage.startsWith("Verification email")) {
+                        FirebaseAuth.getInstance().signOut()
+                        navController.navigate("Welcomscreen") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }) {
+                    Text("OK", color = primaryColor)
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+}

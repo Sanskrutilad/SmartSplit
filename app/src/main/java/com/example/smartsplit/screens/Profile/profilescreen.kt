@@ -1,6 +1,7 @@
 package com.example.smartsplit.screens.Profile
 
 // Jetpack Compose core
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +16,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+
+
+
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 
 // Icons
 import androidx.compose.material.icons.Icons
@@ -32,13 +42,25 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Brush
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewModel = viewModel()) {
     val cardColor = MaterialTheme.colorScheme.surface
+    val user by viewModel.user.observeAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.getUserData()
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -108,7 +130,7 @@ fun ProfileScreen(navController: NavController) {
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "shrikant sharma",
+                        text = "${user?.displayName}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                         color=Color(0xFF304674)
@@ -125,11 +147,11 @@ fun ProfileScreen(navController: NavController) {
                     border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.4f)),
                     colors = CardDefaults.cardColors(containerColor = cardColor)
                 ) {
-                    SettingsItem1(title = "Name", description = "shrikant sharma") {navController.navigate("changeName")}
+                    SettingsItem1(title = "Name", description = "${user?.displayName}") {navController.navigate("changeName")}
                     Divider()
-                    SettingsItem1(title = "Public Nickname", description = "shrikant sharma") {}
+                    SettingsItem1(title = "Public Nickname", description = " ${user?.displayName}") {}
                     Divider()
-                    SettingsItem1(title = "Email", description = "sharmashri2004@gmail.com") { navController.navigate("updateEmail") }
+                    SettingsItem1(title = "Email", description = "${user?.email}") { navController.navigate("updateEmail") }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -170,16 +192,22 @@ fun ProfileScreen(navController: NavController) {
 
                 // --- Logout ---
 
-                    Text(
-                        text = "Logout",
-                        color = Color.Red,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* handle logout */ }
-                            .padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
+                Text(
+                    text = "Logout",
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            FirebaseAuth.getInstance().signOut()
+                            navController.navigate("Welcomscreen") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+
 
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -189,7 +217,7 @@ fun ProfileScreen(navController: NavController) {
                     fontSize = 14.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable{navController.navigate("deletaccount")}
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -251,6 +279,155 @@ fun SettingsItem1(title: String, description: String, onClick: () -> Unit) {
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = null,
             tint = Color.Gray
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeleteAccount(navController: NavController) {
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val context = LocalContext.current
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var passwordInput by remember { mutableStateOf("") }
+    var showPasswordError by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = currentUser?.email ?: "Unknown User",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { showDeleteDialog = true },
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+        ) {
+            Text("Delete Account")
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Account?") },
+            text = {
+                Column {
+                    Text("Enter your password to confirm account deletion.")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = {
+                            passwordInput = it
+                            showPasswordError = false
+                        },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = showPasswordError,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (showPasswordError) {
+                        Text(
+                            text = "Password is required",
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (passwordInput.isBlank()) {
+                        showPasswordError = true
+                        return@TextButton
+                    }
+
+                    val user = FirebaseAuth.getInstance().currentUser
+                    val email = user?.email
+                    if (email.isNullOrBlank()) {
+                        Toast.makeText(context, "No email found", Toast.LENGTH_LONG).show()
+                        return@TextButton
+                    }
+
+                    val credential = EmailAuthProvider.getCredential(email, passwordInput)
+
+                    // Re-authenticate
+                    user.reauthenticate(credential)
+                        .addOnSuccessListener {
+                            Log.d("DeleteAccount", "✅ Re-authentication success")
+
+                            // Delete Firestore user data
+                            FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(user.uid)
+                                .delete()
+                                .addOnSuccessListener {
+                                    Log.d("DeleteAccount", "✅ Firestore user deleted")
+
+                                    // Delete Auth account
+                                    user.delete()
+                                        .addOnSuccessListener {
+                                            Log.d("DeleteAccount", "✅ Auth account deleted")
+                                            Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
+
+                                            // Close dialog and navigate to login
+                                            showDeleteDialog = false
+                                            navController.navigate("login_screen") {
+                                                popUpTo("delete_account_screen") { inclusive = true }
+                                            }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("DeleteAccount", "❌ Auth delete failed: ${e.message}", e)
+                                            if (e is FirebaseAuthRecentLoginRequiredException) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Please log in again and retry.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Auth delete failed: ${e.message}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e("DeleteAccount", "❌ Firestore delete failed: ${e.message}", e)
+                                    Toast.makeText(
+                                        context,
+                                        "Firestore delete failed: ${e.message}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("DeleteAccount", "❌ Re-authentication failed: ${e.message}", e)
+                            Toast.makeText(
+                                context,
+                                "Re-authentication failed: ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                }) {
+                    Text("Delete", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

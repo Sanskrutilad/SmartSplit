@@ -2,6 +2,7 @@ package com.example.smartsplit.screens.Loginscreen
 
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 
 import androidx.compose.animation.AnimatedVisibility
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -51,6 +53,7 @@ fun SignupScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var phoneError by remember { mutableStateOf(false) }
     val showMoreFields = fullName.isNotEmpty()
+    val context = LocalContext.current
 
     val primaryColor = Color(0xFF2196F3) // 🔵 Blue
     val accentColor = primaryColor
@@ -240,27 +243,30 @@ fun SignupScreen(
                 // 🔵 Sign Up Button
                 Button(
                     onClick = {
-                        Log.d(
-                            "Signup",
-                            "Sign Up button clicked with email=$email, passwordLength=${password.length}"
-                        )
-
                         if (email.isNotBlank() && password.length >= 8) {
-                            Log.d("Signup", "Inputs valid → calling Firebase signup")
-                            viewModel.createUserWithEmailAndPassword(email, password) {
-                                Log.d("Signup", "Signup success → navigating to onboardscreen1")
-                                navController.navigate("onboardscreen1")
-                            }
+                            viewModel.createUserWithEmailAndPassword(
+                                email = email,
+                                password = password,
+                                fullName = fullName,
+                                phone = phone,
+                                countryCode = countryCode,
+                                currency = currency,
+                                onWaitingForVerification = {
+                                    Toast.makeText(
+                                        context,
+                                        "Check your inbox and verify your email to continue",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                },
+                                onVerified = {
+                                    navController.navigate("onboardscreen1?isSignup=true")
+                                },
+                                onFailure = { errorMsg ->
+                                    Toast.makeText(context, "Signup failed: $errorMsg", Toast.LENGTH_LONG).show()
+                                }
+                            )
                         } else {
-                            if (email.isBlank()) {
-                                Log.e("Signup", "Signup failed → Email is blank")
-                            }
-                            if (password.length < 8) {
-                                Log.e(
-                                    "Signup",
-                                    "Signup failed → Password too short (len=${password.length})"
-                                )
-                            }
+                            Toast.makeText(context, "Enter valid email & password", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -269,11 +275,18 @@ fun SignupScreen(
                     enabled = !loading
                 ) {
                     if (loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Waiting for verification...", color = Color.White)
+                        }
                     } else {
                         Text("Sign Up", color = Color.White)
                     }

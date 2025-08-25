@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.smartsplit.navigation.AppNavigation
 import com.example.smartsplit.ui.theme.SmartSplitTheme
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -52,6 +53,9 @@ fun LaunchAnimationAppName(navController: NavController) {
     val appName = "SmartSplit"
     val scope = rememberCoroutineScope()
 
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+
     // Track when animation is finished
     var animationFinished by remember { mutableStateOf(false) }
 
@@ -59,8 +63,15 @@ fun LaunchAnimationAppName(navController: NavController) {
     LaunchedEffect(animationFinished) {
         if (animationFinished) {
             delay(800) // small pause after animation
-            navController.navigate("Welcomscreen") {
-                popUpTo("splash") { inclusive = true } // remove splash from back stack
+
+            if (currentUser != null && currentUser.isEmailVerified) {
+                navController.navigate("Group") {
+                    popUpTo("splash") { inclusive = true }
+                }
+            } else {
+                navController.navigate("Welcomscreen") {
+                    popUpTo("splash") { inclusive = true }
+                }
             }
         }
     }
@@ -118,6 +129,7 @@ fun LaunchAnimationAppName(navController: NavController) {
         }
     }
 }
+
 
 
 val BounceInterpolatorEasing = Easing { fraction ->

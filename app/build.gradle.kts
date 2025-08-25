@@ -93,7 +93,13 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.7.0")
     // Debug
     implementation("com.google.accompanist:accompanist-flowlayout:0.36.0")
-
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation(libs.play.services.auth.v2070)
+    implementation ("com.google.firebase:firebase-storage-ktx")
+    implementation("androidx.camera:camera-camera2:1.2.3")
+    implementation("androidx.camera:camera-lifecycle:1.2.3")
+    implementation("androidx.camera:camera-view:1.2.3")
 }
