@@ -1,32 +1,20 @@
 package com.example.smartsplit.Viewmodel
 
-import android.app.Activity
-import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.Firebase
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.auth.User
-import dagger.hilt.android.internal.Contexts.getApplication
 import kotlinx.coroutines.launch
-import com.example.smartsplit.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
 
 class LoginScreenViewModel : ViewModel() {
-
+    var lastCreatedGroupId: String? = null
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
@@ -38,13 +26,182 @@ class LoginScreenViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String?>(null)
     private val _PrivateUser= MutableLiveData<String?>(null)
     val errorMessage: LiveData<String?> = _errorMessage
-    fun firebaseAuthWithGoogle(idToken: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure(e) }
-    }
+
     // 🔹 Sign In
+
+    private val _createdGroupId = MutableLiveData<String?>()
+    val createdGroupId: LiveData<String?> = _createdGroupId
+
+    private val db = FirebaseFirestore.getInstance()
+
+    private val _invites = MutableLiveData<List<Map<String, Any>>>()
+    val invites: LiveData<List<Map<String, Any>>> = _invites
+
+    private val _groups = MutableLiveData<List<Map<String, Any>>>()
+    val groups: LiveData<List<Map<String, Any>>> = _groups
+
+    private val _message = MutableLiveData<String>()
+    val message: LiveData<String> = _message
+
+    // -------------------------
+    // CREATE GROUP
+    // -------------------------
+    fun createGroup(groupName: String, type: String) {
+        val currentUserId = auth.currentUser?.uid
+        if (currentUserId == null) {
+            Log.e("CreateGroup", "User not logged in")
+            _message.value = "User not logged in"
+            return
+        }
+
+        val groupRef = db.collection("groups").document()
+        val groupData = mapOf(
+            "groupId" to groupRef.id,
+            "groupName" to groupName,
+            "groupType" to type,
+            "createdBy" to currentUserId,
+            "members" to listOf(currentUserId),
+            "createdAt" to System.currentTimeMillis()
+        )
+
+        Log.d("CreateGroup", "Attempting to create group with ID: ${groupRef.id}")
+
+        groupRef.set(groupData)
+            .addOnSuccessListener {
+                Log.d("CreateGroup", "Group created successfully in Firestore: ${groupRef.id}")
+                _message.value = "Group created successfully"
+                _createdGroupId.value = groupRef.id
+            }
+
+            .addOnFailureListener { e ->
+                Log.e("CreateGroup", "Failed to create group", e)
+                _message.value = "Failed to create group: ${e.message}"
+            }
+    }
+
+
+    // -------------------------
+    // INVITE USER TO GROUP
+    // -------------------------
+    fun inviteUserToGroup(email: String, groupId: String?) {
+        viewModelScope.launch {
+            db.collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .addOnSuccessListener { query ->
+                    if (!query.isEmpty) {
+                        val targetUser = query.documents[0]
+                        val targetUserId = targetUser.id
+                        val currentUserId = auth.currentUser?.uid ?: return@addOnSuccessListener
+
+                        val inviteData = hashMapOf(
+                            "from" to currentUserId,
+                            "groupId" to groupId,
+                            "status" to "pending",
+                            "timestamp" to System.currentTimeMillis()
+                        )
+
+                        db.collection("users").document(targetUserId)
+                            .collection("invites")
+                            .document(groupId!!)
+                            .set(inviteData)
+                            .addOnSuccessListener {
+                                _message.value = "Invite sent successfully"
+                            }
+                            .addOnFailureListener { e ->
+                                _message.value = "Error sending invite: ${e.message}"
+                            }
+                    } else {
+                        _message.value = "No user found with this email"
+                    }
+                }
+        }
+    }
+
+    // -------------------------
+    // LISTEN FOR INVITES (REAL-TIME)
+    // -------------------------
+    fun listenForInvites() {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(currentUserId)
+            .collection("invites")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("GroupViewModel", "Error listening invites", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val inviteList = snapshot.documents.map { it.data ?: emptyMap() }
+                    _invites.value = inviteList
+                } else {
+                    _invites.value = emptyList()
+                }
+            }
+    }
+
+    // -------------------------
+    // ACCEPT INVITE
+    // -------------------------
+    fun acceptInvite(groupId: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        // Add user to group members
+        val groupRef = db.collection("groups").document(groupId)
+        groupRef.update("members", com.google.firebase.firestore.FieldValue.arrayUnion(currentUserId))
+            .addOnSuccessListener {
+                // Remove invite
+                db.collection("users").document(currentUserId)
+                    .collection("invites")
+                    .document(groupId)
+                    .delete()
+
+                _message.value = "Invite accepted"
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Error accepting invite: ${e.message}"
+            }
+    }
+
+    // -------------------------
+    // REJECT INVITE
+    // -------------------------
+    fun rejectInvite(groupId: String) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(currentUserId)
+            .collection("invites")
+            .document(groupId)
+            .delete()
+            .addOnSuccessListener {
+                _message.value = "Invite rejected"
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Error rejecting invite: ${e.message}"
+            }
+    }
+
+    // -------------------------
+    // LOAD GROUPS FOR USER
+    // -------------------------
+    fun loadGroups() {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        db.collection("groups")
+            .whereArrayContains("members", currentUserId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("GroupViewModel", "Error loading groups", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val groupList = snapshot.documents.map { it.data ?: emptyMap() }
+                    _groups.value = groupList
+                }
+            }
+    }
     fun signInWithEmailAndPassword(
         email: String,
         password: String,
@@ -87,6 +244,7 @@ class LoginScreenViewModel : ViewModel() {
                 Log.e("FB", "Error updating user: ${it.message}")
             }
     }
+
     fun resetPassword(email: String, onResult: (Boolean) -> Unit) {
         FirebaseAuth.getInstance()
             .sendPasswordResetEmail(email)
@@ -149,19 +307,19 @@ class LoginScreenViewModel : ViewModel() {
     }
 
 
-    fun checkEmailVerification(
-        onVerified: () -> Unit,
-        onNotVerified: () -> Unit
-    ) {
-        val user = auth.currentUser
-        user?.reload()?.addOnSuccessListener {
-            if (user.isEmailVerified) {
-                onVerified()
-            } else {
-                onNotVerified()
-            }
-        }
-    }
+//    fun checkEmailVerification(
+//        onVerified: () -> Unit,
+//        onNotVerified: () -> Unit
+//    ) {
+//        val user = auth.currentUser
+//        user?.reload()?.addOnSuccessListener {
+//            if (user.isEmailVerified) {
+//                onVerified()
+//            } else {
+//                onNotVerified()
+//            }
+//        }
+//    }
 
     fun waitForEmailVerification(
         onVerified: () -> Unit,

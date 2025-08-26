@@ -1,5 +1,3 @@
-package com.example.smartsplit.screens.Groups
-
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Flight
@@ -18,6 +15,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,10 +24,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.smartsplit.Viewmodel.LoginScreenViewModel
 
-val primaryColor = Color(0xFF2196F3) // 🔵 Blue
-val accentColor = Color(0xFF2196F3)   // Same blue for text/icons
+val primaryColor = Color(0xFF2196F3)
+val accentColor = Color(0xFF2196F3)
 val gradientBrush = Brush.verticalGradient(
     colors = listOf(
         primaryColor.copy(alpha = 0.15f),
@@ -38,12 +38,19 @@ val gradientBrush = Brush.verticalGradient(
 )
 
 @Composable
-fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit = {},
-                      onDoneClick: () -> Unit = {}) {
+fun CreateGroupScreen(
+    navController: NavHostController,
+    groupViewModel: LoginScreenViewModel = viewModel(), // inject VM
+    onBackClick: () -> Unit = {},
+    onDoneClick: () -> Unit = {}
+) {
     var groupName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf<String?>(null) }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
+    val createdGroupId by groupViewModel.createdGroupId.observeAsState()
+
+    val message by groupViewModel.message.observeAsState("")
 
     val groupTypes = listOf(
         "Travel" to Icons.Default.Flight,
@@ -62,7 +69,7 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
         verticalArrangement = Arrangement.Top
     ) {
         // Back Arrow
-        IconButton(onClick = {navController.popBackStack()}) {
+        IconButton(onClick = { navController.popBackStack() }) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
@@ -88,7 +95,6 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Camera button
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -103,9 +109,7 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
                     tint = Color.White
                 )
             }
-
             Spacer(modifier = Modifier.width(16.dp))
-
             OutlinedTextField(
                 value = groupName,
                 onValueChange = { groupName = it },
@@ -116,6 +120,7 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
                 shape = RoundedCornerShape(12.dp)
             )
         }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         // Group type
@@ -128,7 +133,6 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // 2x2 Grid layout for types
         Column {
             for (i in groupTypes.indices step 2) {
                 Row(
@@ -180,7 +184,11 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
 
         // Done button
         Button(
-            onClick = {navController.navigate("Gropuoverview")},
+            onClick = {
+                if (groupName.isNotBlank() && selectedType != null) {
+                    groupViewModel.createGroup(groupName, selectedType!!)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = accentColor,
@@ -188,6 +196,25 @@ fun CreateGroupScreen(navController: NavHostController, onBackClick: () -> Unit 
             )
         ) {
             Text("Done")
+        }
+
+        // Show status message
+        if (message.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(message, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+
+    LaunchedEffect(createdGroupId, message) {
+        if (message.contains("successfully", ignoreCase = true) && createdGroupId != null) {
+            val type = selectedType ?: "Other"
+            Log.d("CreateGroup", "Navigating with ID: $createdGroupId and type: $type")
+
+            navController.navigate("GroupOverview/$createdGroupId/$type") {
+                popUpTo("CreateGroup") { inclusive = true }
+            }
+        } else {
+            Log.d("CreateGroup", "Message: $message, createdGroupId: $createdGroupId")
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,18 +19,25 @@ import androidx.navigation.NavController
 import com.example.smartsplit.R
 
 @Composable
-fun Welcomscreen(navController: NavController) {
+fun Welcomscreen(
+    navController: NavController,
+    isDarkMode2: Boolean,
+    toggleTheme: () -> Unit
+) {
     val primaryColor = Color(0xFF2196F3)
-
-    // Background gradient
+    val isDarkMode=false
+    // Light mode gradient
     val gradientBrush = Brush.verticalGradient(
-        colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White) // soft tint → white
+        colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = gradientBrush),
+            .then(
+                if (isDarkMode) Modifier.background(Color.Black)
+                else Modifier.background(brush = gradientBrush)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -54,15 +62,16 @@ fun Welcomscreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDarkMode) Color.White else primaryColor
+                )
             ) {
                 Text(
                     "Sign up",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = if (isDarkMode) Color.Black else Color.White
                 )
             }
 
@@ -74,26 +83,32 @@ fun Welcomscreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                border = BorderStroke(1.dp, primaryColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor)
+                shape = RectangleShape,
+                border = BorderStroke(1.dp, if (isDarkMode) Color.White else primaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isDarkMode) Color.White else primaryColor
+                )
             ) {
-                Text("Log in", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Log in",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Google sign-in button
             OutlinedButton(
-                onClick = {  },
+                onClick = { },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                border = BorderStroke(1.dp, Color.LightGray),
+                shape = RectangleShape,
+                border = BorderStroke(1.dp, if (isDarkMode) Color.LightGray else Color.LightGray),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
+                    containerColor = if (isDarkMode) Color.Black else Color.White,
+                    contentColor = if (isDarkMode) Color.White else Color.Black
                 )
             ) {
                 Icon(
@@ -103,7 +118,11 @@ fun Welcomscreen(navController: NavController) {
                     modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Sign in with Google", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "Sign in with Google",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
