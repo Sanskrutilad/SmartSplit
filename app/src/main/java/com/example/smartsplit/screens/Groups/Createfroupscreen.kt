@@ -217,6 +217,7 @@ fun CreateGroupScreen(
             Log.d("CreateGroup", "Message: $message, createdGroupId: $createdGroupId")
         }
     }
+
 }
 
 

@@ -1,6 +1,7 @@
 package com.example.smartsplit.navigation
 
 import CreateGroupScreen
+import NewGroupScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -8,7 +9,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.smartsplit.LaunchAnimationAppName
-import com.example.smartsplit.screens.Groups.NewGroupScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
@@ -24,11 +24,11 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen2
 import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "splash") {
-        composable("Welcomscreen") { Welcomscreen(navController) }
+        composable("Welcomscreen") { Welcomscreen(navController,isDarkMode,toggleTheme) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable(
             "onboardscreen1?isSignup={isSignup}",
@@ -48,16 +48,24 @@ fun AppNavigation() {
         composable("login") { LoginScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
         composable("creategroup") { CreateGroupScreen(navController) }
-        composable("Gropuoverview") { NewGroupScreen(navController) }
+        composable("GroupOverview/{createdGroupId}/{type}") { backStackEntry ->
+            val type = backStackEntry.arguments?.getString("type") ?: "Other"
+            val createdGroupId = backStackEntry.arguments?.getString("createdGroupId")
+            NewGroupScreen(
+                navController = navController,
+                type = type,
+                groupId = createdGroupId
+            )
+
+        }
+
         composable("updateEmail") {
             UpdateEmailScreen(
                 navController = navController)
         }
-
         composable("language") {
             LanguageScreen(navController)
         }
-
         composable("changeName") {
             ChangeNameScreen(navController)
         }
