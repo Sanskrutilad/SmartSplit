@@ -48,17 +48,13 @@ fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
         composable("login") { LoginScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
         composable("creategroup") { CreateGroupScreen(navController) }
-        composable("GroupOverview/{createdGroupId}/{type}") { backStackEntry ->
-            val type = backStackEntry.arguments?.getString("type") ?: "Other"
-            val createdGroupId = backStackEntry.arguments?.getString("createdGroupId")
+        composable("GroupOverview/{createdGroupId}") { backStackEntry ->
+            val createdGroupId = backStackEntry.arguments?.getString("createdGroupId") ?: ""
             NewGroupScreen(
                 navController = navController,
-                type = type,
                 groupId = createdGroupId
             )
-
         }
-
         composable("updateEmail") {
             UpdateEmailScreen(
                 navController = navController)

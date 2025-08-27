@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
 
 val primaryColor = Color(0xFF2196F3)
@@ -40,16 +41,15 @@ val gradientBrush = Brush.verticalGradient(
 @Composable
 fun CreateGroupScreen(
     navController: NavHostController,
-    groupViewModel: LoginScreenViewModel = viewModel(), // inject VM
-    onBackClick: () -> Unit = {},
-    onDoneClick: () -> Unit = {}
+    groupViewModel: GroupViewModel = viewModel(), // Use correct VM
+    onBackClick: () -> Unit = {}
 ) {
     var groupName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf<String?>(null) }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
-    val createdGroupId by groupViewModel.createdGroupId.observeAsState()
 
+    val createdGroupId by groupViewModel.createdGroupId.observeAsState()
     val message by groupViewModel.message.observeAsState("")
 
     val groupTypes = listOf(
@@ -69,7 +69,7 @@ fun CreateGroupScreen(
         verticalArrangement = Arrangement.Top
     ) {
         // Back Arrow
-        IconButton(onClick = { navController.popBackStack() }) {
+        IconButton(onClick = { onBackClick(); navController.popBackStack() }) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
@@ -158,6 +158,7 @@ fun CreateGroupScreen(
             }
         }
 
+        // Travel-specific fields
         if (selectedType == "Travel") {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -205,19 +206,13 @@ fun CreateGroupScreen(
         }
     }
 
+    // Navigate only with groupId when created
     LaunchedEffect(createdGroupId, message) {
         if (message.contains("successfully", ignoreCase = true) && createdGroupId != null) {
-            val type = selectedType ?: "Other"
-            Log.d("CreateGroup", "Navigating with ID: $createdGroupId and type: $type")
-
-            navController.navigate("GroupOverview/$createdGroupId/$type") {
+            Log.d("CreateGroup", "Navigating with ID: $createdGroupId")
+            navController.navigate("GroupOverview/$createdGroupId") {
                 popUpTo("CreateGroup") { inclusive = true }
             }
-        } else {
-            Log.d("CreateGroup", "Message: $message, createdGroupId: $createdGroupId")
         }
     }
-
 }
-
-

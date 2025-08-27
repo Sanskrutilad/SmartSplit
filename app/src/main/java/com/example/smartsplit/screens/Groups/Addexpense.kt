@@ -1,22 +1,37 @@
 package com.example.smartsplit.screens.Groups
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 
-val primaryBlue = Color(0xFF709DD0)
+val primaryColor = Color(0xFF2196F3)
+val accentColor = Color(0xFF2196F3)
+val gradientBrush = Brush.verticalGradient(
+    colors = listOf(
+        primaryColor.copy(alpha = 0.15f),
+        Color.White
+    )
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,130 +40,165 @@ fun AddExpenseScreen(navController: NavController? = null) {
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf("You") }
     var splitBy by remember { mutableStateOf("Equally") }
+    var showSaveBtn by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Add Expense") },
-                navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Save */ }) {
-                        Icon(Icons.Default.Check, contentDescription = "Save")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = primaryBlue,
-                    actionIconContentColor = primaryBlue
-                )
+    // Animate button visibility based on input
+    LaunchedEffect(description, amount) {
+        showSaveBtn = description.isNotBlank() && amount.isNotBlank()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(gradientBrush)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Top
+    ) {
+        // Back Arrow
+        IconButton(onClick = { navController?.popBackStack() }) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = accentColor
             )
-        },
-        containerColor = Color.White
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Title
+        Text(
+            text = "Add expense",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                color = accentColor,
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // With you and group section
+        ElevatedCard(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
         ) {
-
-            // With you and group section
-            ElevatedCard(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("With you and:")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AssistChip(
-                        onClick = {},
-                        label = { Text("All of Trip") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Flight, contentDescription = null, tint = primaryBlue)
-                        },
-                        colors = AssistChipDefaults.assistChipColors(containerColor = primaryBlue.copy(alpha = 0.1f))
+                Text("With you and:")
+                Spacer(modifier = Modifier.width(8.dp))
+                AssistChip(
+                    onClick = {},
+                    label = { Text("All of Trip") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Flight, contentDescription = null, tint = primaryColor)
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = Color.Transparent
                     )
-                }
+                )
             }
+        }
 
-            // Description input
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
-                placeholder = { Text("e.g. Dinner at café") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    Icon(Icons.Default.Receipt, contentDescription = null, tint = primaryBlue)
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryBlue,
-                    cursorColor = primaryBlue
-                )
+        Spacer(Modifier.height(16.dp))
+
+        // Description input
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description") },
+            placeholder = { Text("e.g. Dinner at café") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            leadingIcon = {
+                Icon(Icons.Default.Receipt, contentDescription = null, tint = primaryColor)
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                cursorColor = primaryColor
             )
+        )
 
-            // Amount input
-            OutlinedTextField(
-                value = amount,
-                onValueChange = { amount = it },
-                label = { Text("Amount") },
-                placeholder = { Text("0.00") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    Text("₹", color = primaryBlue, style = MaterialTheme.typography.titleMedium)
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryBlue,
-                    cursorColor = primaryBlue
-                )
+        Spacer(Modifier.height(16.dp))
+
+        // Amount input
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount") },
+            placeholder = { Text("0.00") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            leadingIcon = {
+                Text("₹", color = primaryColor, style = MaterialTheme.typography.titleMedium)
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                cursorColor = primaryColor
             )
+        )
 
-            // Paid by & Split row
-            ElevatedCard(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+        Spacer(Modifier.height(36.dp))
+
+        // Paid by & Split row
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 10.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Transparent
+            ),
+            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f)) // 🔹 Soft outline
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 30.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("Paid by")
-                    AssistChip(
-                        onClick = { /* Change payer */ },
-                        label = { Text(paidBy) },
-                        colors = AssistChipDefaults.assistChipColors(containerColor = primaryBlue.copy(alpha = 0.1f))
+                Text("Paid by", color = Color.Black.copy(alpha = 0.8f))
+                AssistChip(
+                    onClick = { /* Change payer */ },
+                    label = { Text(paidBy) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = primaryColor.copy(alpha = 0.1f)
                     )
-                    Text("and split")
-                    AssistChip(
-                        onClick = { /* Change split method */ },
-                        label = { Text(splitBy) },
-                        colors = AssistChipDefaults.assistChipColors(containerColor = primaryBlue.copy(alpha = 0.1f))
+                )
+                Text("and split", color = Color.Black.copy(alpha = 0.8f))
+                AssistChip(
+                    onClick = { /* Change split method */ },
+                    label = { Text(splitBy) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = primaryColor.copy(alpha = 0.1f)
                     )
-                }
+                )
             }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
 
-            // Save button
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Animated Save button
+        AnimatedVisibility(visible = showSaveBtn) {
+            val scale by animateFloatAsState(targetValue = if (showSaveBtn) 1f else 0.8f)
+
             Button(
                 onClick = { /* Save expense */ },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(50.dp)
+                    .graphicsLayer(scaleX = scale, scaleY = scale),
                 shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
+                colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
             ) {
-                Text("Save Expense", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Save Expense",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }

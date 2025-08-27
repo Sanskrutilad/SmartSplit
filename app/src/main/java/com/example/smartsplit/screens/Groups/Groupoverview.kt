@@ -1,7 +1,10 @@
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -27,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.Group
+import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
 
 
@@ -41,31 +46,33 @@ val groupTypes = listOf(
 @Composable
 fun NewGroupScreen(
     navController: NavController,
-    type: String,
-    groupId: String?,
-    viewModel: LoginScreenViewModel = viewModel()
+    groupId: String,
+    viewModel: GroupViewModel = viewModel()
 ) {
-
     val primaryColor = Color(0xFF2196F3)
     val accentColor = Color(0xFF2196F3)
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
     )
+    var selectedTab by remember { mutableStateOf("Members") }
 
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showInviteDialog by remember { mutableStateOf(false) }
     var inviteEmail by remember { mutableStateOf("") }
 
-    val groups by viewModel.groups.observeAsState(emptyList())
     val message by viewModel.message.observeAsState("")
+    val members by viewModel.groupMembers.observeAsState(emptyList())
+    val pendingInvites by viewModel.pendingInvites.observeAsState(emptyList())
 
-    // Listen to groups in Firestore
-    LaunchedEffect(Unit) {
-        viewModel.loadGroups()
+    var group by remember { mutableStateOf<Group?>(null) }
+
+    // Load group details & members once
+    LaunchedEffect(groupId) {
+        viewModel.fetchGroupDetails(groupId) {
+            group = it
+        }
+        viewModel.fetchGroupMembers(groupId)
     }
-
-    // Find this group’s data
-    val group = groups.find { it["id"] == groupId }
 
     Column(
         modifier = Modifier
@@ -107,7 +114,7 @@ fun NewGroupScreen(
             Spacer(Modifier.width(12.dp))
 
             Text(
-                text = group?.get("name") as? String ?: "$type Group",
+                text = group?.name ?: "Loading...",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -115,43 +122,116 @@ fun NewGroupScreen(
             )
         }
 
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = "Type: ${group?.type ?: "..." }",
+            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
+        )
+
+        Text(
+            text = "Created by: ${group?.createdBy ?: "..." }",
+            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+        )
+
         Spacer(Modifier.height(20.dp))
 
         // 🔘 Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            GroupChip("Settle up")
-            GroupChip("Balance")
-            GroupChip("Total")
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            item {
+                GroupChip("Settle up", selectedTab == "Settle up") { selectedTab = "Settle up" }
+            }
+            item {
+                GroupChip("Balance", selectedTab == "Balance") { selectedTab = "Balance" }
+            }
+            item {
+                GroupChip("Total", selectedTab == "Total") { selectedTab = "Total" }
+            }
+            item {
+                GroupChip("Members", selectedTab == "Members") { selectedTab = "Members" }
+            }
         }
 
         Spacer(Modifier.height(20.dp))
 
-        // 🎯 Members list
-        Text("Members:", fontWeight = FontWeight.SemiBold)
-        val members = group?.get("members") as? List<*> ?: emptyList<String>()
-        members.forEach { member ->
-            Text("• $member", color = Color.DarkGray, fontSize = 14.sp)
+        // 👉 Show content based on selected chip
+        when (selectedTab) {
+            "Members" -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors= CardDefaults.cardColors(Color.Transparent),
+                    border = BorderStroke(1.dp, Color.Gray)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("Members:", fontWeight = FontWeight.SemiBold)
+
+                        members.forEach { member ->
+                            Text("• ${member.email ?: member.uid}", color = Color.DarkGray, fontSize = 14.sp)
+                        }
+
+                        if (pendingInvites.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Pending Invites:", fontWeight = FontWeight.SemiBold)
+                            pendingInvites.forEach { member ->
+                                Text("• ${member.email ?: member.uid} (Pending)", color = Color.Gray, fontSize = 12.sp)
+                            }
+                        }
+
+
+
+                        // ➕ Invite Members Button
+
+                    }
+                }
+                Spacer(Modifier.height(52.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = { showInviteDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Invite Members", color = Color.White)
+                    }
+                }
+
+
+            }
+
+            "Settle up" -> {
+                Text("💸 Settle up feature coming soon...", modifier = Modifier.padding(16.dp))
+            }
+
+            "Balance" -> {
+                Text("📊 Balance details will be shown here.", modifier = Modifier.padding(16.dp))
+            }
+
+            "Total" -> {
+                Text("🧾 Total expenses summary here.", modifier = Modifier.padding(16.dp))
+            }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(20.dp))
 
-        // ➕ Add Members
-        Button(
-            onClick = { showInviteDialog = true },
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-            shape = RoundedCornerShape(50)
-        ) {
-            Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = Color.White)
-            Spacer(Modifier.width(8.dp))
-            Text("Invite Members", color = Color.White)
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // ➕ Add Expense button
+        // ➕ Add Expense button (always visible)
         Button(
             onClick = { /* TODO: Add expense */ },
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
             shape = RoundedCornerShape(50)
         ) {
@@ -171,7 +251,7 @@ fun NewGroupScreen(
                 TextButton(
                     onClick = {
                         showLeaveDialog = false
-                        // TODO: call viewModel.leaveGroup(groupId)
+                        // TODO: viewModel.leaveGroup(groupId)
                     }
                 ) {
                     Text("Leave", color = Color.Red, fontWeight = FontWeight.Bold)
@@ -200,7 +280,8 @@ fun NewGroupScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.inviteUserToGroup(inviteEmail, groupId)
+                        // TODO: implement invite in GroupViewModel
+                        // viewModel.inviteUserToGroup(inviteEmail, groupId)
                         inviteEmail = ""
                         showInviteDialog = false
                     }
@@ -220,20 +301,22 @@ fun NewGroupScreen(
     if (message.isNotEmpty()) {
         LaunchedEffect(message) {
             Log.d("UI", "Message: $message")
-            // You can use Toast or Snackbar here
         }
     }
 }
 
-
 @Composable
-fun GroupChip(label: String) {
-    OutlinedButton(
-        onClick = { },
+fun GroupChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
+    Surface(
         shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.6f)),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        border = BorderStroke(1.dp, Color.Gray),
+        modifier = Modifier.clickable { onClick() }
     ) {
-        Text(label, color = Color.Black)
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            color = if (isSelected) Color.White else Color.Black
+        )
     }
 }
