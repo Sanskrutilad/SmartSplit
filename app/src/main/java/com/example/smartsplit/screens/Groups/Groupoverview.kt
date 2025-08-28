@@ -1,3 +1,4 @@
+
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
@@ -33,6 +35,7 @@ import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 
 val groupTypes = listOf(
@@ -55,7 +58,6 @@ fun NewGroupScreen(
         colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
     )
     var selectedTab by remember { mutableStateOf("Members") }
-
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showInviteDialog by remember { mutableStateOf(false) }
     var inviteEmail by remember { mutableStateOf("") }
@@ -63,10 +65,10 @@ fun NewGroupScreen(
     val message by viewModel.message.observeAsState("")
     val members by viewModel.groupMembers.observeAsState(emptyList())
     val pendingInvites by viewModel.pendingInvites.observeAsState(emptyList())
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     var group by remember { mutableStateOf<Group?>(null) }
 
-    // Load group details & members once
     LaunchedEffect(groupId) {
         viewModel.fetchGroupDetails(groupId) {
             group = it
@@ -82,7 +84,6 @@ fun NewGroupScreen(
     ) {
         Spacer(Modifier.height(16.dp))
 
-        // 🔝 Group Top Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -92,14 +93,18 @@ fun NewGroupScreen(
                 Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = accentColor)
             }
 
-            TextButton(onClick = { showLeaveDialog = true }) {
-                Icon(Icons.Filled.ExitToApp, contentDescription = "Leave Group", tint = Color.Blue)
+            if (group?.createdBy == FirebaseAuth.getInstance().currentUser?.email) {
+                TextButton(onClick = { showDeleteDialog = true }) {
+                    Icon(Icons.Filled.ExitToApp, contentDescription = "Delete Group", tint = Color.Red)
+                }
+            } else {
+                TextButton(onClick = { showLeaveDialog = true }) {
+                    Icon(Icons.Filled.ExitToApp, contentDescription = "Leave Group", tint = Color.Blue)
+                }
             }
         }
-
         Spacer(Modifier.height(16.dp))
 
-        // ✅ Group Title
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -136,7 +141,6 @@ fun NewGroupScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // 🔘 Chips
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -157,7 +161,6 @@ fun NewGroupScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // 👉 Show content based on selected chip
         when (selectedTab) {
             "Members" -> {
                 Card(
@@ -185,11 +188,6 @@ fun NewGroupScreen(
                                 Text("• ${member.email ?: member.uid} (Pending)", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
-
-
-
-                        // ➕ Invite Members Button
-
                     }
                 }
                 Spacer(Modifier.height(52.dp))
@@ -226,9 +224,8 @@ fun NewGroupScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ➕ Add Expense button (always visible)
         Button(
-            onClick = { /* TODO: Add expense */ },
+            onClick = {  },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -241,29 +238,30 @@ fun NewGroupScreen(
         }
     }
 
-    // ⚠️ Leave Group Dialog
-    if (showLeaveDialog) {
+    if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showLeaveDialog = false },
-            title = { Text("Leave Group?") },
-            text = { Text("Are you sure you want to leave this group?") },
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Group?") },
+            text = { Text("This action cannot be undone. Are you sure you want to delete this group?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showLeaveDialog = false
-                        // TODO: viewModel.leaveGroup(groupId)
+                        showDeleteDialog = false
+                        viewModel.deleteGroup(groupId)
+                        navController.popBackStack()
                     }
                 ) {
-                    Text("Leave", color = Color.Red, fontWeight = FontWeight.Bold)
+                    Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLeaveDialog = false }) {
+                TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel", color = Color.Gray)
                 }
             }
         )
     }
+
 
     // ✉️ Invite Member Dialog
     if (showInviteDialog) {
