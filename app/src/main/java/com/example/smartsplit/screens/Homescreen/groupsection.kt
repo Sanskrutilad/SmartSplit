@@ -247,7 +247,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 "home" -> Icons.Default.Home
                 "trip" -> Icons.Default.Flight
                 "work" -> Icons.Default.Work
-                else -> Icons.Default.Group
+                else -> Icons.Default.Flight
             }
 
             Icon(
@@ -268,7 +268,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "No expenses", // bind actual data later
+                    text = group.type, // bind actual data later
                     fontSize = 16.sp,
                     color = Color.Gray
                 )
