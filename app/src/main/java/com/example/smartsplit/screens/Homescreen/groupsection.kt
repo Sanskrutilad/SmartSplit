@@ -113,7 +113,7 @@ fun GroupSectionScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Add expense */ },
+                onClick = { navController.navigate("addexpense") },
                 containerColor = Color(0xFF0077CC),
                 shape = RoundedCornerShape(50)
             ) {
@@ -126,7 +126,6 @@ fun GroupSectionScreen(
         }
     ) { innerPadding ->
         if (myGroups.isEmpty()) {
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -192,7 +191,14 @@ fun GroupSectionScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF8F9FA))
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFE6F2FF),
+                                Color(0xFFCCE5FF)
+                            )
+                        )
+                    )
                     .padding(innerPadding)
                     .padding(8.dp)
             ) {
@@ -249,7 +255,6 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 "work" -> Icons.Default.Work
                 else -> Icons.Default.Flight
             }
-
             Icon(
                 imageVector = icon,
                 contentDescription = null,

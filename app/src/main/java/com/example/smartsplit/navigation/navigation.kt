@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.smartsplit.LaunchAnimationAppName
+import com.example.smartsplit.screens.Groups.AddExpenseScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
@@ -71,6 +72,12 @@ fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
         }
         composable("deletaccount") {
             DeleteAccount(navController = navController)
+        }
+        composable("deletaccount") {
+            DeleteAccount(navController = navController)
+        }
+        composable("addexpense") {
+            AddExpenseScreen(navController = navController)
         }
 
     }
