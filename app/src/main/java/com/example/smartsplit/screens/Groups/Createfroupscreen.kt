@@ -10,7 +10,10 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PeopleOutline
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
@@ -21,12 +24,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.GroupViewModel
+import com.example.smartsplit.R
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
 
 val primaryColor = Color(0xFF2196F3)
@@ -104,10 +109,12 @@ fun CreateGroupScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.CameraAlt,
-                    contentDescription = "Add Photo",
+                    imageVector = Icons.Default.PeopleOutline,
+                    contentDescription = "Group Photo",
                     tint = Color.White
                 )
+
+
             }
             Spacer(modifier = Modifier.width(16.dp))
             OutlinedTextField(
@@ -117,7 +124,8 @@ fun CreateGroupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
             )
         }
 

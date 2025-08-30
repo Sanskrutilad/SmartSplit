@@ -57,7 +57,7 @@ fun SignupScreen(
     val context = LocalContext.current
     val loading by viewModel.loading.observeAsState(false)
 
-    val isDark = false
+    val isDark = true
 
     // Light mode colors
     val primaryColor = Color(0xFF2196F3)

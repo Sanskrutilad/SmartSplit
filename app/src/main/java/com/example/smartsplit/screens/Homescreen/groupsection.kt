@@ -5,11 +5,13 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -31,11 +33,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +78,13 @@ fun GroupSectionScreen(
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Search",
+                            tint = Color(0xFF0077CC)
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("creategroup") }) {
+                        Icon(
+                            imageVector = Icons.Filled.Group,
+                            contentDescription = "addgroup",
                             tint = Color(0xFF0077CC)
                         )
                     }
@@ -255,29 +266,43 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 "work" -> Icons.Default.Work
                 else -> Icons.Default.Flight
             }
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color(0xFF0077CC),
-                modifier = Modifier.size(48.dp) // bigger icon
-            )
+            Box(
+                modifier = Modifier
+                    .size(56.dp) // outer circle size
+                    .clip(CircleShape)
+                    .border(2.dp, Color(0xFF0077CC), CircleShape) // circle border
+                    .background(Color.White), // background inside circle
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF0077CC),
+                    modifier = Modifier.size(28.dp) // icon size inside circle
+                )
+            }
+
 
             Spacer(modifier = Modifier.width(20.dp))
 
             Column {
                 Text(
                     text = group.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Black
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF222222), // slightly softer black
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = group.type, // bind actual data later
-                    fontSize = 16.sp,
-                    color = Color.Gray
+                    text = group.type,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF666666) // softer gray
                 )
             }
+
         }
     }
 }
