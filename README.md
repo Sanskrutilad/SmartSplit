@@ -26,9 +26,15 @@ Core App Sections – Profile management & groups exploration
 
 <img width="250" height="520" alt="Screenshot 2025-08-25 at 3 53 44 PM" src="https://github.com/user-attachments/assets/29fafcf3-d0a0-4d9e-acc8-a99fbbba6ca6" />
 
-<img width="250" height="520" alt="Screenshot 2025-08-25 at 3 52 51 PM" src="https://github.com/user-attachments/assets/67f2a05d-9049-4306-b403-70e06005c297" />
+<img width="221" height="477" alt="Screenshot 2025-08-29 at 9 35 20 PM" src="https://github.com/user-attachments/assets/301b7fa7-dc39-4cf7-898f-248a71da4899" />
 
 <img width="250" height="520" alt="Screenshot 2025-08-25 at 3 51 40 PM" src="https://github.com/user-attachments/assets/e7941978-0704-4d52-98f6-260afb3dca72" />
 
 <img width="250" height="520" alt="Screenshot 2025-08-25 at 3 52 17 PM" src="https://github.com/user-attachments/assets/a8660552-3ddb-4813-9da4-5e6bcbe77615" />
+
+<img width="216" height="467" alt="Screenshot 2025-08-29 at 9 38 41 PM" src="https://github.com/user-attachments/assets/e3793c79-2976-4be6-802a-994a86251b83" />
+
+
+
+
 
