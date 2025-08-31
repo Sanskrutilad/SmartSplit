@@ -20,6 +20,7 @@ import com.example.smartsplit.screens.Profile.DeleteAccount
 import com.example.smartsplit.screens.Profile.LanguageScreen
 import com.example.smartsplit.screens.Profile.ProfileScreen
 import com.example.smartsplit.screens.Profile.UpdateEmailScreen
+import com.example.smartsplit.screens.history.HistoryScreen
 import com.example.smartsplit.screens.onboarding.OnboardingScreen1
 import com.example.smartsplit.screens.onboarding.OnboardingScreen2
 import com.example.smartsplit.screens.onboarding.OnboardingScreen3
@@ -28,7 +29,7 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "splash") {
+    NavHost(navController = navController, startDestination = "history") {
         composable("Welcomscreen") { Welcomscreen(navController,isDarkMode,toggleTheme) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable(
@@ -49,6 +50,7 @@ fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
         composable("login") { LoginScreen(navController) }
         composable("profile") { ProfileScreen(navController) }
         composable("creategroup") { CreateGroupScreen(navController) }
+        composable("history") { HistoryScreen(navController) }
         composable("GroupOverview/{createdGroupId}") { backStackEntry ->
             val createdGroupId = backStackEntry.arguments?.getString("createdGroupId") ?: ""
             NewGroupScreen(
