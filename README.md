@@ -6,11 +6,15 @@ The app keeps track of pending balances, so everyone knows who owes what, making
 
 🚀 Features Done Till Now
 
-Modern Authentication Flow – User-friendly login/signup with gradient UI & full authentication
+Modern Authentication Flow: Gradient UI login/signup with full authentication.
 
-Smooth App Entry Experience – Animated splash screen & engaging onboarding
+Smooth App Entry: Animated splash + interactive onboarding.
 
-Core App Sections – Profile management & groups exploration
+Profile Management: User details & account updates.
+
+Groups Section: Exploration & details view (mostly complete).
+
+History Section: Initial setup started, work in progress.
 
 📱 Screenshots
 
@@ -24,17 +28,16 @@ Core App Sections – Profile management & groups exploration
 
 <img width="250" height="520" alt="WhatsApp Image 2025-08-21 at 7 46 41 PM" src="https://github.com/user-attachments/assets/6775d64e-9df8-4973-b79f-f1642b6bf65e" />
 
-<img width="250" height="520" alt="Screenshot 2025-08-25 at 3 53 44 PM" src="https://github.com/user-attachments/assets/29fafcf3-d0a0-4d9e-acc8-a99fbbba6ca6" />
-
-<img width="221" height="477" alt="Screenshot 2025-08-29 at 9 35 20 PM" src="https://github.com/user-attachments/assets/301b7fa7-dc39-4cf7-898f-248a71da4899" />
+<img width="250" height="520" alt="Screenshot 2025-08-29 at 9 35 20 PM" src="https://github.com/user-attachments/assets/301b7fa7-dc39-4cf7-898f-248a71da4899" />
 
 <img width="250" height="520" alt="Screenshot 2025-08-25 at 3 51 40 PM" src="https://github.com/user-attachments/assets/e7941978-0704-4d52-98f6-260afb3dca72" />
 
 <img width="250" height="520" alt="Screenshot 2025-08-25 at 3 52 17 PM" src="https://github.com/user-attachments/assets/a8660552-3ddb-4813-9da4-5e6bcbe77615" />
 
-<img width="216" height="467" alt="Screenshot 2025-08-29 at 9 38 41 PM" src="https://github.com/user-attachments/assets/e3793c79-2976-4be6-802a-994a86251b83" />
+<img width="250" height="520" alt="Screenshot 2025-08-29 at 9 38 41 PM" src="https://github.com/user-attachments/assets/e3793c79-2976-4be6-802a-994a86251b83" />
 
-
-
+<img width="250" height="520" alt="Screenshot 2025-08-31 at 11 13 31 PM" src="https://github.com/user-attachments/assets/683d607d-7a3f-4122-a59c-30c79fff18a1" />
+<img src="https://github.com/user-attachments/assets/e1a88091-7f5f-4a00-98c5-7b6bf3390f13" alt="Screenshot 2025-09-01 at 12 18 51 AM" width="250" height="520" />
+<img src="https://github.com/user-attachments/assets/5dd03a41-242e-4ee2-a273-48ff36da4ce1" alt="Screenshot 2025-09-01 at 12 20 48 AM" width="250" height="520" />
 
 
