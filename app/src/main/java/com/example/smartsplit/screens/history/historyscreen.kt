@@ -1,5 +1,6 @@
 package com.example.smartsplit.screens.history
 
+import accentColor
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,51 +16,74 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 
 @Composable
 fun HistoryScreen(navController: NavHostController) {
-    Scaffold(bottomBar = {
-        NavigationBar(containerColor = Color.White) {
-            NavigationBarItem(
-                selected = false,
-                onClick = { navController.navigate("Group")},
-                icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                label = { Text("Groups") }
-            )
-            NavigationBarItem(
-                selected = false,
-                onClick = { },
-                icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                label = { Text("Friends") }
-            )
-            NavigationBarItem(
-                selected = true,
-                onClick = { },
-                icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                label = { Text("History") }
-            )
-            NavigationBarItem(
-                selected = false,
-                onClick = { navController.navigate("profile") },
-                icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                label = { Text("Account") }
-            )
+    val currentTextColor = MaterialTheme.colorScheme.onBackground
+    val accentColor = Color(0xFF2196F3)
+    Scaffold(
+        bottomBar = {
+            NavigationBar(containerColor = Color.White) {
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate("Group") },
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
+                    label = { Text("Groups") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
+                    label = { Text("Friends") }
+                )
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { },
+                    icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
+                    label = { Text("History") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate("profile") },
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
+                    label = { Text("Account") }
+                )
+            }
         }
-    }) { innerPadding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(Color(0xFFE6F2FF))
         ) {
-            Text(
-                text = "History",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = accentColor,
+                        modifier=Modifier.padding(start = 7.dp)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "History",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier=Modifier.padding(start = 17.dp)
+                )
+            }
 
             LazyColumn(
                 contentPadding = PaddingValues(12.dp),
@@ -87,7 +111,6 @@ val sampleHistoryList = listOf(
     HistoryItem("Ibivivi", "Added in Trip • You do not owe anything", "6 days ago, 22:16", ActionType.ADD),
     HistoryItem("Kochiii", "Group deleted", "24 Aug, 15:52", ActionType.DELETE),
     HistoryItem("Trip", "Group created", "24 Aug, 15:50", ActionType.CREATE),
-    HistoryItem("Kochiii", "Group restored", "24 Aug, 15:52", ActionType.UPDATE)
 )
 
 @Composable
