@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -62,25 +61,6 @@ fun GroupSectionScreen(
         viewModel.fetchMyGroups()
     }
 
-    val isDark = true
-
-    val primaryColor = Color(0xFF2196F3)
-    val accentColor = primaryColor
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(
-            primaryColor.copy(alpha = 0.15f),
-            Color.White
-        )
-    )
-
-    val darkBackground = Color.Black
-    val darkText = Color.White
-    val darkCardBg = Color(0xFF1C1C1C)
-    val darkButtonBg = Color.White
-    val darkButtonText = Color.Black
-
-    val currentTextColor = if (isDark) darkText else Color(0xFF004C99)
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,7 +69,7 @@ fun GroupSectionScreen(
                         "SmartSplit",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) darkText else Color(0xFF0077CC)
+                            color = Color(0xFF0077CC)
                         )
                     )
                 },
@@ -98,60 +78,60 @@ fun GroupSectionScreen(
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Search",
-                            tint = if (isDark) darkText else Color(0xFF0077CC)
+                            tint = Color(0xFF0077CC)
                         )
                     }
                     IconButton(onClick = { navController.navigate("creategroup") }) {
                         Icon(
                             imageVector = Icons.Filled.Group,
                             contentDescription = "addgroup",
-                            tint = if (isDark) darkText else Color(0xFF0077CC)
+                            tint = Color(0xFF0077CC)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDark) darkBackground else Color.Transparent
+                    containerColor = Color.Transparent
                 )
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = if (isDark) darkBackground else Color.White) {
+            NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
                     icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                    label = { Text("Groups", color = currentTextColor) }
+                    label = { Text("Groups") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = {navController.navigate("friends") },
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                    label = { Text("Friends", color = currentTextColor) }
+                    label = { Text("Friends") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = {navController.navigate("history") },
+                    onClick = { navController.navigate("history") },
                     icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("History", color = currentTextColor) }
+                    label = { Text("History") }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("profile") },
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account", color = currentTextColor) }
+                    label = { Text("Account") }
                 )
             }
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("addexpense") },
-                containerColor = if (isDark) darkButtonBg else Color(0xFF0077CC),
+                containerColor = Color(0xFF0077CC),
                 shape = RoundedCornerShape(50)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add Expense",
-                    tint = if (isDark) darkButtonText else Color.White
+                    tint = Color.White
                 )
             }
         }
@@ -160,12 +140,13 @@ fun GroupSectionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (isDark) {
-                            Modifier.background(color = darkBackground)
-                        } else {
-                            Modifier.background(brush = gradientBrush)
-                        }
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFE6F2FF),
+                                Color(0xFFCCE5FF)
+                            )
+                        )
                     )
                     .padding(innerPadding)
                     .padding(24.dp),
@@ -176,13 +157,13 @@ fun GroupSectionScreen(
                     text = "No groups yet",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = currentTextColor
+                    color = Color(0xFF004C99)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Create your first group to split expenses with friends!",
                     fontSize = 16.sp,
-                    color = if (isDark) darkText.copy(alpha = 0.7f) else Color.Gray,
+                    color = Color.Gray,
                     modifier = Modifier.padding(horizontal = 24.dp),
                     lineHeight = 20.sp
                 )
@@ -190,8 +171,8 @@ fun GroupSectionScreen(
                 Button(
                     onClick = { navController.navigate("creategroup") },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) darkButtonBg else Color(0xFF0077CC),
-                        contentColor = if (isDark) darkButtonText else Color.White
+                        containerColor = Color(0xFF0077CC),
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(0.8f)
@@ -204,7 +185,7 @@ fun GroupSectionScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(0.8f),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (isDark) darkText else Color(0xFF0077CC)
+                        contentColor = Color(0xFF0077CC)
                     )
                 ) {
                     Text(text = "Join Group with Code", fontSize = 16.sp)
@@ -213,7 +194,7 @@ fun GroupSectionScreen(
                 Text(
                     text = "💡 Tip: Use groups to manage trips, events, and shared expenses.",
                     fontSize = 14.sp,
-                    color = if (isDark) darkText.copy(alpha = 0.7f) else Color.DarkGray,
+                    color = Color.DarkGray,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
@@ -221,12 +202,13 @@ fun GroupSectionScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (isDark) {
-                            Modifier.background(color = darkBackground)
-                        } else {
-                            Modifier.background(brush = gradientBrush)
-                        }
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFE6F2FF),
+                                Color(0xFFCCE5FF)
+                            )
+                        )
                     )
                     .padding(innerPadding)
                     .padding(8.dp)
@@ -244,37 +226,17 @@ fun GroupSectionScreen(
 @Composable
 fun GroupCard(group: Group, onClick: () -> Unit) {
     var isPressed by remember { mutableStateOf(false) }
-    val isDark = true
-
-    // Colors
-    val lightCardBg = Color.White
-    val darkCardBg = Color(0xFF1C1C1C)
-    val lightPressedBg = Color(0xFFE3F2FD)
-    val darkPressedBg = Color(0xFF2C2C2C)
-
-    val textPrimaryLight = Color(0xFF222222)
-    val textSecondaryLight = Color(0xFF666666)
-    val textPrimaryDark = Color.White
-    val textSecondaryDark = Color(0xFFAAAAAA)
-
-    val accent = Color(0xFF0077CC)
 
     // Animate padding, color, and scale on press
     val animatedPadding by animateDpAsState(targetValue = if (isPressed) 4.dp else 12.dp)
-    val animatedColor by animateColorAsState(
-        targetValue = if (isPressed) {
-            if (isDark) darkPressedBg else lightPressedBg
-        } else {
-            if (isDark) darkCardBg else lightCardBg
-        }
-    )
+    val animatedColor by animateColorAsState(targetValue = if (isPressed) Color(0xFFE3F2FD) else Color.White)
     val scale by animateFloatAsState(targetValue = if (isPressed) 0.97f else 1f)
     val elevation by animateDpAsState(targetValue = if (isPressed) 12.dp else 6.dp)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp)
+            .height(110.dp) // increased height
             .padding(horizontal = animatedPadding, vertical = 8.dp)
             .graphicsLayer {
                 scaleX = scale
@@ -306,19 +268,21 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
             }
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(56.dp) // outer circle size
                     .clip(CircleShape)
-                    .border(2.dp, accent, CircleShape)
-                    .background( Color.White),
+                    .border(2.dp, Color(0xFF0077CC), CircleShape) // circle border
+                    .background(Color.White), // background inside circle
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(28.dp)
+                    tint = Color(0xFF0077CC),
+                    modifier = Modifier.size(28.dp) // icon size inside circle
                 )
             }
+
+
             Spacer(modifier = Modifier.width(20.dp))
 
             Column {
@@ -326,7 +290,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                     text = group.name,
                     fontSize = 23.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDark) textPrimaryDark else textPrimaryLight,
+                    color = Color(0xFF222222), // slightly softer black
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -335,7 +299,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                     text = group.type,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isDark) textSecondaryDark else textSecondaryLight
+                    color = Color(0xFF666666) // softer gray
                 )
             }
         }

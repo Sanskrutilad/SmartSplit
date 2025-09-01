@@ -40,13 +40,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val darkModeViewModel: DarkModeViewModel = viewModel()
-            val isDarkMode by darkModeViewModel.darkMode.collectAsState()
-            SmartSplitTheme(darkTheme = isDarkMode) {
-                AppNavigation(
-                    isDarkMode = isDarkMode,
-                    toggleTheme = { darkModeViewModel.toggleDarkMode() },
-                )
+            SmartSplitTheme() {
+                AppNavigation()
             }
         }
     }

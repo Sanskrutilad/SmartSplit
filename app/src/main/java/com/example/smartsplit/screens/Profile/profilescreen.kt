@@ -250,7 +250,7 @@ fun SettingsItem(title: String, description: String, onClick: () -> Unit) {
             if (description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(text = description, fontSize = 13.sp, color = Color.Gray,
-                    )
+                )
             }
         }
         Icon(

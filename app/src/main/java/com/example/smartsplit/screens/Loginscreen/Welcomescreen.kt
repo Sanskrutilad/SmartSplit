@@ -21,8 +21,7 @@ import com.example.smartsplit.R
 @Composable
 fun Welcomscreen(
     navController: NavController,
-    isDarkMode2: Boolean,
-    toggleTheme: () -> Unit
+
 ) {
     val primaryColor = Color(0xFF2196F3)
     val isDarkMode=false

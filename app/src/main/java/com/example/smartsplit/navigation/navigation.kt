@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.smartsplit.LaunchAnimationAppName
+import com.example.smartsplit.screens.Friends.FriendsScreen
 import com.example.smartsplit.screens.Groups.AddExpenseScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
@@ -26,11 +27,11 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen2
 import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 
 @Composable
-fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
+fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "Group") {
-        composable("Welcomscreen") { Welcomscreen(navController,isDarkMode,toggleTheme) }
+        composable("Welcomscreen") { Welcomscreen(navController) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable(
             "onboardscreen1?isSignup={isSignup}",
@@ -51,6 +52,7 @@ fun AppNavigation(isDarkMode: Boolean, toggleTheme: () -> Unit) {
         composable("profile") { ProfileScreen(navController) }
         composable("creategroup") { CreateGroupScreen(navController) }
         composable("history") { HistoryScreen(navController) }
+        composable("friends") { FriendsScreen(navController) }
         composable("GroupOverview/{createdGroupId}") { backStackEntry ->
             val createdGroupId = backStackEntry.arguments?.getString("createdGroupId") ?: ""
             NewGroupScreen(

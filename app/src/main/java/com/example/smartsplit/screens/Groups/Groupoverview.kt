@@ -46,48 +46,28 @@ val groupTypes = listOf(
     "Grocery" to Icons.Default.ShoppingCart,
     "Other" to Icons.Default.NoteAdd
 )
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewGroupScreen(
     navController: NavController,
     groupId: String,
     viewModel: GroupViewModel = viewModel()
 ) {
-
-    val isDark = true
-
     val primaryColor = Color(0xFF2196F3)
-    val accentColor = primaryColor
+    val accentColor = Color(0xFF2196F3)
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
     )
-
-    val darkBackground = Color.Black
-    val darkText = Color.White
-    val darkCardBorder = Color.Gray
-    val darkButtonBg = Color.White
-    val darkButtonText = Color.Black
-
-    val backgroundModifier = if (isDark) {
-        Modifier.background(darkBackground)
-    } else {
-        Modifier.background(gradientBrush)
-    }
-    val currentTextColor = if (isDark) darkText else Color.Black
-    val secondaryTextColor = if (isDark) Color.LightGray else Color.DarkGray
-    val borderColor = if (isDark) darkCardBorder else Color.Gray
-
-    // 🔹 UI state
     var selectedTab by remember { mutableStateOf("Members") }
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showInviteDialog by remember { mutableStateOf(false) }
     var inviteEmail by remember { mutableStateOf("") }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var group by remember { mutableStateOf<Group?>(null) }
 
     val message by viewModel.message.observeAsState("")
     val members by viewModel.groupMembers.observeAsState(emptyList())
     val pendingInvites by viewModel.pendingInvites.observeAsState(emptyList())
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    var group by remember { mutableStateOf<Group?>(null) }
 
     LaunchedEffect(groupId) {
         viewModel.fetchGroupDetails(groupId) {
@@ -99,7 +79,7 @@ fun NewGroupScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(backgroundModifier)
+            .background(gradientBrush)
             .padding(24.dp)
     ) {
         Spacer(Modifier.height(16.dp))
@@ -110,11 +90,7 @@ fun NewGroupScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(
-                    Icons.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = if (isDark) darkText else accentColor
-                )
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = accentColor)
             }
 
             if (group?.createdBy == FirebaseAuth.getInstance().currentUser?.email) {
@@ -123,11 +99,10 @@ fun NewGroupScreen(
                 }
             } else {
                 TextButton(onClick = { showLeaveDialog = true }) {
-                    Icon(Icons.Filled.ExitToApp, contentDescription = "Leave Group", tint = if (isDark) darkText else Color.Blue)
+                    Icon(Icons.Filled.ExitToApp, contentDescription = "Leave Group", tint = Color.Blue)
                 }
             }
         }
-
         Spacer(Modifier.height(16.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -147,7 +122,7 @@ fun NewGroupScreen(
                 text = group?.name ?: "Loading...",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    color = currentTextColor
+                    color = Color.Black
                 )
             )
         }
@@ -155,13 +130,13 @@ fun NewGroupScreen(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Type: ${group?.type ?: "..."}",
-            style = MaterialTheme.typography.bodyMedium.copy(color = secondaryTextColor)
+            text = "Type: ${group?.type ?: "..." }",
+            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
         )
 
         Text(
-            text = "Created by: ${group?.createdBy ?: "..."}",
-            style = MaterialTheme.typography.bodySmall.copy(color = if (isDark) Color.Gray else Color.Gray)
+            text = "Created by: ${group?.createdBy ?: "..." }",
+            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
         )
 
         Spacer(Modifier.height(20.dp))
@@ -171,26 +146,28 @@ fun NewGroupScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             item {
-                GroupChip("Settle up", selectedTab == "Settle up", isDark) { selectedTab = "Settle up" }
+                GroupChip("Settle up", selectedTab == "Settle up") { selectedTab = "Settle up" }
             }
             item {
-                GroupChip("Balance", selectedTab == "Balance", isDark) { selectedTab = "Balance" }
+                GroupChip("Balance", selectedTab == "Balance") { selectedTab = "Balance" }
             }
             item {
-                GroupChip("Total", selectedTab == "Total", isDark) { selectedTab = "Total" }
+                GroupChip("Total", selectedTab == "Total") { selectedTab = "Total" }
             }
             item {
-                GroupChip("Members", selectedTab == "Members", isDark) { selectedTab = "Members" }
+                GroupChip("Members", selectedTab == "Members") { selectedTab = "Members" }
             }
         }
+
         Spacer(Modifier.height(20.dp))
+
         when (selectedTab) {
             "Members" -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(Color.Transparent),
-                    border = BorderStroke(1.dp, borderColor)
+                    colors= CardDefaults.cardColors(Color.Transparent),
+                    border = BorderStroke(1.dp, Color.Gray)
                 ) {
                     Column(
                         modifier = Modifier
@@ -198,81 +175,74 @@ fun NewGroupScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text("Members:", fontWeight = FontWeight.SemiBold, color = currentTextColor)
+                        Text("Members:", fontWeight = FontWeight.SemiBold)
 
                         members.forEach { member ->
-                            Text("• ${member.email ?: member.uid}", color = secondaryTextColor, fontSize = 14.sp)
+                            Text("• ${member.email ?: member.uid}", color = Color.DarkGray, fontSize = 14.sp)
                         }
 
                         if (pendingInvites.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
-                            Text("Pending Invites:", fontWeight = FontWeight.SemiBold, color = currentTextColor)
+                            Text("Pending Invites:", fontWeight = FontWeight.SemiBold)
                             pendingInvites.forEach { member ->
                                 Text("• ${member.email ?: member.uid} (Pending)", color = Color.Gray, fontSize = 12.sp)
                             }
                         }
                     }
                 }
-
                 Spacer(Modifier.height(52.dp))
-
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
                         onClick = { showInviteDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isDark) darkButtonBg else accentColor,
-                            contentColor = if (isDark) darkButtonText else Color.White
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                         shape = RoundedCornerShape(50)
                     ) {
-                        Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = if (isDark) darkButtonText else Color.White)
+                        Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
-                        Text("Invite Members", color = if (isDark) darkButtonText else Color.White)
+                        Text("Invite Members", color = Color.White)
                     }
                 }
+
+
             }
 
             "Settle up" -> {
-                Text("💸 Settle up feature coming soon...", modifier = Modifier.padding(16.dp), color = currentTextColor)
+                Text("💸 Settle up feature coming soon...", modifier = Modifier.padding(16.dp))
             }
 
             "Balance" -> {
-                Text("📊 Balance details will be shown here.", modifier = Modifier.padding(16.dp), color = currentTextColor)
+                Text("📊 Balance details will be shown here.", modifier = Modifier.padding(16.dp))
             }
 
             "Total" -> {
-                Text("🧾 Total expenses summary here.", modifier = Modifier.padding(16.dp), color = currentTextColor)
+                Text("🧾 Total expenses summary here.", modifier = Modifier.padding(16.dp))
             }
         }
 
         Spacer(Modifier.height(20.dp))
 
         Button(
-            onClick = { },
+            onClick = {  },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) darkButtonBg else accentColor,
-                contentColor = if (isDark) darkButtonText else Color.White
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
             shape = RoundedCornerShape(50)
         ) {
-            Icon(Icons.Filled.Receipt, contentDescription = null, tint = if (isDark) darkButtonText else Color.White)
+            Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color.White)
             Spacer(Modifier.width(8.dp))
-            Text("Add expense", color = if (isDark) darkButtonText else Color.White)
+            Text("Add expense", color = Color.White)
         }
     }
 
-    // Delete Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Group?", color = currentTextColor) },
-            text = { Text("This action cannot be undone. Are you sure?", color = currentTextColor) },
+            title = { Text("Delete Group?") },
+            text = { Text("This action cannot be undone. Are you sure you want to delete this group?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -286,48 +256,46 @@ fun NewGroupScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = secondaryTextColor)
+                    Text("Cancel", color = Color.Gray)
                 }
             }
         )
     }
 
-    // Invite Member Dialog
+
+    // ✉️ Invite Member Dialog
     if (showInviteDialog) {
         AlertDialog(
             onDismissRequest = { showInviteDialog = false },
-            title = { Text("Invite Member", color = currentTextColor) },
+            title = { Text("Invite Member") },
             text = {
                 OutlinedTextField(
                     value = inviteEmail,
                     onValueChange = { inviteEmail = it },
-                    label = { Text("Enter email", color = currentTextColor) },
-                    textStyle = LocalTextStyle.current.copy(color = currentTextColor),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = if (isDark) Color.White else accentColor,
-                        unfocusedBorderColor = if (isDark) Color.Gray else Color.Gray,
-                        cursorColor = currentTextColor
-                    )
+                    label = { Text("Enter email") }
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        // TODO: implement invite in GroupViewModel
+                        // viewModel.inviteUserToGroup(inviteEmail, groupId)
                         inviteEmail = ""
                         showInviteDialog = false
                     }
                 ) {
-                    Text("Send Invite", color = if (isDark) darkText else accentColor)
+                    Text("Send Invite", color = accentColor)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showInviteDialog = false }) {
-                    Text("Cancel", color = secondaryTextColor)
+                    Text("Cancel")
                 }
             }
         )
     }
 
+    // 🔔 Show messages (like Toast)
     if (message.isNotEmpty()) {
         LaunchedEffect(message) {
             Log.d("UI", "Message: $message")
@@ -336,17 +304,17 @@ fun NewGroupScreen(
 }
 
 @Composable
-fun GroupChip(text: String, isSelected: Boolean, isDark: Boolean, onClick: () -> Unit) {
+fun GroupChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(50),
         color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        border = BorderStroke(1.dp, if (isDark) Color.Gray else Color.Gray),
+        border = BorderStroke(1.dp, Color.Gray),
         modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = if (isSelected) Color.White else if (isDark) Color.White else Color.Black
+            color = if (isSelected) Color.White else Color.Black
         )
     }
 }

@@ -154,7 +154,7 @@ fun HistoryItemCard(item: HistoryItem) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium)
+                Text(item.title, style = MaterialTheme.typography.titleMedium,color=Color.Black)
                 Text(item.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 Text(item.time, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }

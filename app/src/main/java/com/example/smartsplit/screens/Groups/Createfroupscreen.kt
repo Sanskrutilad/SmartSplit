@@ -43,11 +43,10 @@ val gradientBrush = Brush.verticalGradient(
     )
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateGroupScreen(
     navController: NavHostController,
-    groupViewModel: GroupViewModel = viewModel(),
+    groupViewModel: GroupViewModel = viewModel(), // Use correct VM
     onBackClick: () -> Unit = {}
 ) {
     var groupName by remember { mutableStateOf("") }
@@ -66,57 +65,37 @@ fun CreateGroupScreen(
         "Grocery" to Icons.Default.ShoppingCart,
         "Other" to Icons.Default.NoteAdd
     )
-    val isDark = true
-
-    val primaryColor = Color(0xFF2196F3)
-    val accentColor = primaryColor
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(
-            primaryColor.copy(alpha = 0.15f),
-            Color.White
-        )
-    )
-
-    val darkBackground = Color.Black
-    val darkText = Color.White
-    val darkFieldBorder = Color.White
-    val darkButtonBg = Color.White
-    val darkButtonText = Color.Black
-
-    val backgroundModifier = if (isDark) {
-        Modifier.background(darkBackground)
-    } else {
-        Modifier.background(gradientBrush)
-    }
-    val currentTextColor = if (isDark) darkText else accentColor
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(backgroundModifier)
+            .background(gradientBrush)
             .padding(24.dp),
         verticalArrangement = Arrangement.Top
     ) {
+        // Back Arrow
         IconButton(onClick = { onBackClick(); navController.popBackStack() }) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
-                tint = currentTextColor
+                tint = accentColor
             )
         }
 
         Spacer(Modifier.height(12.dp))
 
+        // Title
         Text(
             text = "Create Group",
             style = MaterialTheme.typography.headlineSmall.copy(
-                color = currentTextColor,
+                color = accentColor,
                 fontWeight = FontWeight.Bold
             )
         )
 
         Spacer(Modifier.height(24.dp))
 
+        // Row with camera + group name
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -134,23 +113,19 @@ fun CreateGroupScreen(
                     contentDescription = "Group Photo",
                     tint = Color.White
                 )
+
+
             }
             Spacer(modifier = Modifier.width(16.dp))
             OutlinedTextField(
                 value = groupName,
                 onValueChange = { groupName = it },
-                label = { Text("Group name", color = if (isDark) darkText else Color.Gray) },
-                textStyle = LocalTextStyle.current.copy(color = if (isDark) darkText else Color.Black),
+                label = { Text("Group name") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = if (isDark) darkFieldBorder else accentColor,
-                    unfocusedBorderColor = if (isDark) darkFieldBorder else Color.Gray,
-                    cursorColor = if (isDark) darkText else Color.Black
-                )
+                singleLine = true
             )
         }
 
@@ -161,7 +136,7 @@ fun CreateGroupScreen(
             text = "Choose Type",
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold,
-                color = currentTextColor
+                color = Color.Black
             ),
             modifier = Modifier.padding(bottom = 12.dp)
         )
@@ -176,12 +151,11 @@ fun CreateGroupScreen(
                         FilterChip(
                             selected = selectedType == label,
                             onClick = { selectedType = label },
-                            label = { Text(label, color = currentTextColor) },
+                            label = { Text(label) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = icon,
-                                    contentDescription = label,
-                                    tint = currentTextColor
+                                    contentDescription = label
                                 )
                             },
                             modifier = Modifier.weight(1f)
@@ -199,15 +173,9 @@ fun CreateGroupScreen(
             OutlinedTextField(
                 value = startDate,
                 onValueChange = { startDate = it },
-                label = { Text("Start Date (Optional)", color = if (isDark) darkText else Color.Gray) },
-                textStyle = LocalTextStyle.current.copy(color = if (isDark) darkText else Color.Black),
+                label = { Text("Start Date (Optional)") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = if (isDark) darkFieldBorder else accentColor,
-                    unfocusedBorderColor = if (isDark) darkFieldBorder else Color.Gray,
-                    cursorColor = if (isDark) darkText else Color.Black
-                )
+                shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -215,15 +183,9 @@ fun CreateGroupScreen(
             OutlinedTextField(
                 value = endDate,
                 onValueChange = { endDate = it },
-                label = { Text("End Date (Optional)", color = if (isDark) darkText else Color.Gray) },
-                textStyle = LocalTextStyle.current.copy(color = if (isDark) darkText else Color.Black),
+                label = { Text("End Date (Optional)") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = if (isDark) darkFieldBorder else accentColor,
-                    unfocusedBorderColor = if (isDark) darkFieldBorder else Color.Gray,
-                    cursorColor = if (isDark) darkText else Color.Black
-                )
+                shape = RoundedCornerShape(12.dp)
             )
         }
 
@@ -238,8 +200,8 @@ fun CreateGroupScreen(
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) darkButtonBg else accentColor,
-                contentColor = if (isDark) darkButtonText else Color.White
+                containerColor = accentColor,
+                contentColor = Color.White
             )
         ) {
             Text("Done")
@@ -248,11 +210,7 @@ fun CreateGroupScreen(
         // Show status message
         if (message.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                message,
-                color = if (isDark) darkText else Color.Gray,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text(message, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         }
     }
 
