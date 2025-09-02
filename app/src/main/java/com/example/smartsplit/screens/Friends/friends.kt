@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.smartsplit.screens.history.HistoryItemCard
-import com.example.smartsplit.screens.history.sampleHistoryList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

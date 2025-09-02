@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -19,11 +21,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.smartsplit.Viewmodel.HistoryViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
-fun HistoryScreen(navController: NavHostController) {
-    val currentTextColor = MaterialTheme.colorScheme.onBackground
+fun HistoryScreen(
+    navController: NavHostController,
+    viewModel: HistoryViewModel = viewModel()
+) {
+    val historyList by viewModel.history.collectAsState()
     val accentColor = Color(0xFF2196F3)
     Scaffold(
         bottomBar = {
@@ -36,7 +46,7 @@ fun HistoryScreen(navController: NavHostController) {
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = { navController.navigate("friends")},
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
                     label = { Text("Friends") }
                 )
@@ -71,7 +81,7 @@ fun HistoryScreen(navController: NavHostController) {
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
                         tint = accentColor,
-                        modifier=Modifier.padding(start = 7.dp)
+                        modifier = Modifier.padding(start = 7.dp)
                     )
                 }
                 Spacer(Modifier.height(12.dp))
@@ -81,16 +91,26 @@ fun HistoryScreen(navController: NavHostController) {
                         color = accentColor,
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier=Modifier.padding(start = 17.dp)
+                    modifier = Modifier.padding(start = 17.dp)
                 )
             }
-
             LazyColumn(
                 contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(sampleHistoryList) { historyItem ->
-                    HistoryItemCard(historyItem)
+                if (historyList.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No activity yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                } else {
+                    items(historyList) { historyItem ->
+                        HistoryItemCard(historyItem)
+                    }
                 }
             }
         }
@@ -98,20 +118,19 @@ fun HistoryScreen(navController: NavHostController) {
 }
 
 data class HistoryItem(
-    val title: String,
-    val description: String,
-    val time: String,
-    val type: ActionType
-)
+    val id: String = "",
+    val title: String = "",
+    val description: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val type: ActionType = ActionType.CREATE
+) {
+    fun getFormattedTime(): String {
+        return SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+            .format(Date(timestamp))
+    }
+}
 
 enum class ActionType { ADD, DELETE, UPDATE, CREATE }
-
-val sampleHistoryList = listOf(
-    HistoryItem("Dinner", "Added in Trip • You do not owe anything", "Yesterday, 22:30", ActionType.ADD),
-    HistoryItem("Ibivivi", "Added in Trip • You do not owe anything", "6 days ago, 22:16", ActionType.ADD),
-    HistoryItem("Kochiii", "Group deleted", "24 Aug, 15:52", ActionType.DELETE),
-    HistoryItem("Trip", "Group created", "24 Aug, 15:50", ActionType.CREATE),
-)
 
 @Composable
 fun HistoryItemCard(item: HistoryItem) {
@@ -151,14 +170,11 @@ fun HistoryItemCard(item: HistoryItem) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium,color=Color.Black)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.title, style = MaterialTheme.typography.titleMedium, color = Color.Black)
                 Text(item.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                Text(item.time, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(item.getFormattedTime(), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
         }
     }
 }
-

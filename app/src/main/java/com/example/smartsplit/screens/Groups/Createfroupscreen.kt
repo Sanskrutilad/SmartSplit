@@ -33,6 +33,8 @@ import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.R
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.Viewmodel.logActivity
+import com.google.firebase.auth.FirebaseAuth
 
 val primaryColor = Color(0xFF2196F3)
 val accentColor = Color(0xFF2196F3)
@@ -53,7 +55,7 @@ fun CreateGroupScreen(
     var selectedType by remember { mutableStateOf<String?>(null) }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
-
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val createdGroupId by groupViewModel.createdGroupId.observeAsState()
     val message by groupViewModel.message.observeAsState("")
 
@@ -217,6 +219,13 @@ fun CreateGroupScreen(
     // Navigate only with groupId when created
     LaunchedEffect(createdGroupId, message) {
         if (message.contains("successfully", ignoreCase = true) && createdGroupId != null) {
+            logActivity(
+                type = "GROUP_CREATED",
+                description = "Group '$groupName' was created",
+                relatedGroupId = createdGroupId,
+                userId = currentUserId
+            )
+
             Log.d("CreateGroup", "Navigating with ID: $createdGroupId")
             navController.navigate("GroupOverview/$createdGroupId") {
                 popUpTo("CreateGroup") { inclusive = true }

@@ -99,7 +99,7 @@ fun GroupSectionScreen(
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups")},
                     label = { Text("Groups") }
                 )
                 NavigationBarItem(
@@ -264,6 +264,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 "home" -> Icons.Default.Home
                 "trip" -> Icons.Default.Flight
                 "work" -> Icons.Default.Work
+                "Friends" -> Icons.Default.Work
                 else -> Icons.Default.Flight
             }
             Box(

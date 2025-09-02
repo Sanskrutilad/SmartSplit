@@ -35,6 +35,7 @@ import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.Viewmodel.logActivity
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -61,20 +62,25 @@ fun NewGroupScreen(
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showInviteDialog by remember { mutableStateOf(false) }
     var inviteEmail by remember { mutableStateOf("") }
+    var groupName by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf<String?>(null) }
 
     val message by viewModel.message.observeAsState("")
     val members by viewModel.groupMembers.observeAsState(emptyList())
     val pendingInvites by viewModel.pendingInvites.observeAsState(emptyList())
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     var group by remember { mutableStateOf<Group?>(null) }
 
     LaunchedEffect(groupId) {
-        viewModel.fetchGroupDetails(groupId) {
-            group = it
+        viewModel.fetchGroupDetails(groupId) { fetchedGroup ->
+            group = fetchedGroup
+            groupName = fetchedGroup?.name ?: ""
         }
         viewModel.fetchGroupMembers(groupId)
     }
+
 
     Column(
         modifier = Modifier
@@ -94,7 +100,12 @@ fun NewGroupScreen(
             }
 
             if (group?.createdBy == FirebaseAuth.getInstance().currentUser?.email) {
-                TextButton(onClick = { showDeleteDialog = true }) {
+                TextButton(
+                    onClick = {
+
+                        showDeleteDialog = true
+                    }
+                ) {
                     Icon(Icons.Filled.ExitToApp, contentDescription = "Delete Group", tint = Color.Red)
                 }
             } else {
@@ -102,9 +113,9 @@ fun NewGroupScreen(
                     Icon(Icons.Filled.ExitToApp, contentDescription = "Leave Group", tint = Color.Blue)
                 }
             }
+
         }
         Spacer(Modifier.height(16.dp))
-
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -264,36 +275,36 @@ fun NewGroupScreen(
 
 
     // ✉️ Invite Member Dialog
-    if (showInviteDialog) {
+    if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showInviteDialog = false },
-            title = { Text("Invite Member") },
-            text = {
-                OutlinedTextField(
-                    value = inviteEmail,
-                    onValueChange = { inviteEmail = it },
-                    label = { Text("Enter email") }
-                )
-            },
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Group?") },
+            text = { Text("This action cannot be undone. Are you sure you want to delete this group?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // TODO: implement invite in GroupViewModel
-                        // viewModel.inviteUserToGroup(inviteEmail, groupId)
-                        inviteEmail = ""
-                        showInviteDialog = false
+                        showDeleteDialog = false
+                        viewModel.deleteGroup(groupId) // delete from Firestore
+                        logActivity(
+                            type = "GROUP_DELETED",
+                            description = "Group '$groupName' was deleted",
+                            relatedGroupId = groupId,
+                            userId = currentUserId
+                        )
+                        navController.popBackStack()
                     }
                 ) {
-                    Text("Send Invite", color = accentColor)
+                    Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showInviteDialog = false }) {
-                    Text("Cancel")
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
                 }
             }
         )
     }
+
 
     // 🔔 Show messages (like Toast)
     if (message.isNotEmpty()) {
