@@ -54,9 +54,9 @@ fun FriendsScreen(navController: NavController) {
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
-                    icon = { Icon(Icons.Default.List, contentDescription = "Activity") },
-                    label = { Text("Activity") }
+                    onClick = { navController.navigate("history")},
+                    icon = { Icon(Icons.Default.List, contentDescription = "History") },
+                    label = { Text("History") }
                 )
                 NavigationBarItem(
                     selected = false,
