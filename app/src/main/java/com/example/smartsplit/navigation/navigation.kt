@@ -16,6 +16,7 @@ import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
 import com.example.smartsplit.screens.Loginscreen.Welcomscreen
 import com.example.smartsplit.screens.Profile.ChangeNameScreen
+import com.example.smartsplit.screens.Profile.ChangePhoneNumberScreen
 import com.example.smartsplit.screens.Profile.DarkModeSettingsScreen
 import com.example.smartsplit.screens.Profile.DeleteAccount
 import com.example.smartsplit.screens.Profile.LanguageScreen
@@ -69,6 +70,9 @@ fun AppNavigation() {
         }
         composable("changeName") {
             ChangeNameScreen(navController)
+        }
+        composable("changephone") {
+            ChangePhoneNumberScreen(navController)
         }
 
         composable("darkMode") {

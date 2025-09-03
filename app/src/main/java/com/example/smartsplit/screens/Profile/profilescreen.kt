@@ -149,7 +149,7 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                 ) {
                     SettingsItem1(title = "Name", description = "${user?.displayName}") {navController.navigate("changeName")}
                     Divider()
-                    SettingsItem1(title = "Public Nickname", description = " ${user?.displayName}") {}
+                    SettingsItem1(title = "Phone Number", description = " ${user?.phone}") {navController.navigate("changephone")}
                     Divider()
                     SettingsItem1(title = "Email", description = "${user?.email}") { navController.navigate("updateEmail") }
                 }
