@@ -42,7 +42,7 @@ fun FriendsScreen(navController: NavController) {
             NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate("groups") },
+                    onClick = { navController.navigate("Group") },
                     icon = { Icon(Icons.Default.Group, contentDescription = "Groups") },
                     label = { Text("Groups") }
                 )
@@ -60,7 +60,7 @@ fun FriendsScreen(navController: NavController) {
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = {navController.navigate("profile") },
                     icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Account") },
                     label = { Text("Account") }
                 )

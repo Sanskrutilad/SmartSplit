@@ -74,13 +74,13 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = {navController.navigate("friends") },
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
                     label = { Text("Friends") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
+                    onClick = {navController.navigate("history") },
                     icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
                     label = { Text("History") }
                 )

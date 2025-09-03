@@ -40,9 +40,16 @@ fun AddExpenseScreen(navController: NavController? = null) {
     var amount by remember { mutableStateOf("") }
     var paidBy by remember { mutableStateOf("You") }
     var splitBy by remember { mutableStateOf("Equally") }
+    var withGroup by remember { mutableStateOf("All of Trip") }
+
     var showSaveBtn by remember { mutableStateOf(false) }
 
-    // Animate button visibility based on input
+    // Dialog state
+    var showPaidByDialog by remember { mutableStateOf(false) }
+    var showSplitDialog by remember { mutableStateOf(false) }
+    var showGroupDialog by remember { mutableStateOf(false) }
+
+    // Animate button visibility
     LaunchedEffect(description, amount) {
         showSaveBtn = description.isNotBlank() && amount.isNotBlank()
     }
@@ -90,8 +97,8 @@ fun AddExpenseScreen(navController: NavController? = null) {
                 Text("With you and:")
                 Spacer(modifier = Modifier.width(8.dp))
                 AssistChip(
-                    onClick = {},
-                    label = { Text("All of Trip") },
+                    onClick = { showGroupDialog = true },
+                    label = { Text(withGroup) },
                     leadingIcon = {
                         Icon(Icons.Default.Flight, contentDescription = null, tint = primaryColor)
                     },
@@ -146,11 +153,13 @@ fun AddExpenseScreen(navController: NavController? = null) {
         // Paid by & Split row
         Card(
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(start = 10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
             ),
-            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f)) // 🔹 Soft outline
+            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
         ) {
             Row(
                 modifier = Modifier
@@ -161,7 +170,7 @@ fun AddExpenseScreen(navController: NavController? = null) {
             ) {
                 Text("Paid by", color = Color.Black.copy(alpha = 0.8f))
                 AssistChip(
-                    onClick = { /* Change payer */ },
+                    onClick = { showPaidByDialog = true },
                     label = { Text(paidBy) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = primaryColor.copy(alpha = 0.1f)
@@ -169,7 +178,7 @@ fun AddExpenseScreen(navController: NavController? = null) {
                 )
                 Text("and split", color = Color.Black.copy(alpha = 0.8f))
                 AssistChip(
-                    onClick = { /* Change split method */ },
+                    onClick = { showSplitDialog = true },
                     label = { Text(splitBy) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = primaryColor.copy(alpha = 0.1f)
@@ -177,7 +186,6 @@ fun AddExpenseScreen(navController: NavController? = null) {
                 )
             }
         }
-
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -202,7 +210,65 @@ fun AddExpenseScreen(navController: NavController? = null) {
             }
         }
     }
+
+    // 🔹 Paid By Dialog
+    if (showPaidByDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaidByDialog = false },
+            title = { Text("Select payer") },
+            text = {
+                Column {
+                    listOf("You", "Alice", "Bob").forEach { option ->
+                        TextButton(onClick = {
+                            paidBy = option
+                            showPaidByDialog = false
+                        }) { Text(option) }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // 🔹 Split Method Dialog
+    if (showSplitDialog) {
+        AlertDialog(
+            onDismissRequest = { showSplitDialog = false },
+            title = { Text("Select split method") },
+            text = {
+                Column {
+                    listOf("Equally", "By shares", "By percentage").forEach { option ->
+                        TextButton(onClick = {
+                            splitBy = option
+                            showSplitDialog = false
+                        }) { Text(option) }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // 🔹 Group Dialog
+    if (showGroupDialog) {
+        AlertDialog(
+            onDismissRequest = { showGroupDialog = false },
+            title = { Text("Select group") },
+            text = {
+                Column {
+                    listOf("All of Trip", "Roommates", "Friends").forEach { option ->
+                        TextButton(onClick = {
+                            withGroup = option
+                            showGroupDialog = false
+                        }) { Text(option) }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
