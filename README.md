@@ -38,7 +38,7 @@ Friends Section: Initial setup started, work in progress.
 
 <img width="250" height="520" alt="Screenshot 2025-08-29 at 9 38 41 PM" src="https://github.com/user-attachments/assets/e3793c79-2976-4be6-802a-994a86251b83" />
 
-<img width="293" height="609" alt="Screenshot 2025-09-04 at 12 20 49 AM" src="https://github.com/user-attachments/assets/75553d47-a102-4437-8826-373f14e6f4ba" />
+<img width="250" height="520" alt="Screenshot 2025-09-04 at 12 20 49 AM" src="https://github.com/user-attachments/assets/75553d47-a102-4437-8826-373f14e6f4ba" />
 
 <img width="250" height="520" alt="Screenshot 2025-08-31 at 11 13 31 PM" src="https://github.com/user-attachments/assets/683d607d-7a3f-4122-a59c-30c79fff18a1" />
 
