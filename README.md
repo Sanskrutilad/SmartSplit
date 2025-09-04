@@ -14,9 +14,9 @@ Profile Management: User details & account updates.
 
 Groups Section: Exploration & details view (mostly complete).
 
-History Section: Initial setup started, work in progress.
+History Section: Features for group creation, deletion, and expense tracking have been completed.
 
-Friends Section: Initial setup started, work in progress.
+Friends Section: Functionality for sending friend requests and adding friends has been completed.
 
 📱 Screenshots
 
@@ -45,4 +45,7 @@ Friends Section: Initial setup started, work in progress.
 <img src="https://github.com/user-attachments/assets/5dd03a41-242e-4ee2-a273-48ff36da4ce1" alt="Screenshot 2025-09-01 at 12 20 48 AM" width="250" height="520" />
 
 <img width="250" height="520" alt="Screenshot 2025-09-03 000831" src="https://github.com/user-attachments/assets/831ca1e8-863f-4c45-b0a7-5c09b04a3a08" />
+<img width="250" height="520" alt="Screenshot 2025-09-05 at 1 00 22 AM" src="https://github.com/user-attachments/assets/8c535d89-dd3c-49f3-ad8c-5725ff4b68c1" />
+
+
 
