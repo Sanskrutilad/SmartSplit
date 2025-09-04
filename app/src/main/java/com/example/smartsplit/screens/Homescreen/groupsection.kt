@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Work
@@ -84,6 +85,13 @@ fun GroupSectionScreen(
                     IconButton(onClick = { navController.navigate("creategroup") }) {
                         Icon(
                             imageVector = Icons.Filled.Group,
+                            contentDescription = "addgroup",
+                            tint = Color(0xFF0077CC)
+                        )
+                    }
+                    IconButton(onClick = { navController.navigate("notification") }) {
+                        Icon(
+                            imageVector = Icons.Filled.Notifications,
                             contentDescription = "addgroup",
                             tint = Color(0xFF0077CC)
                         )

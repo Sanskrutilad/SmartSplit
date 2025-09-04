@@ -100,7 +100,4 @@ class HistoryViewModel : ViewModel() {
                 _history.value = items
             }
     }
-
-
-
 }
