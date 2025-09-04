@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,43 +35,67 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel()
 ) {
     val historyList by viewModel.history.collectAsState()
-    val accentColor = Color(0xFF2196F3)
+
+    // Dark mode toggle (later replace with isSystemInDarkTheme())
+    val isDark = true
+
+    // Colors
+    val primaryColor = Color(0xFF2196F3)
+    val accentColor = primaryColor
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            primaryColor.copy(alpha = 0.15f),
+            Color.White
+        )
+    )
+
+    val darkBackground = Color.Black
+    val darkCardBg = Color(0xFF1E1E1E)
+    val darkText = Color.White
+    val darkSecondaryText = Color.LightGray
+    val darkNavBar = Color(0xFF121212)
+
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = if (isDark) darkNavBar else Color.White) {
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("Group") },
                     icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                    label = { Text("Groups") }
+                    label = { Text("Groups", color = if (isDark) darkText else Color.Black) }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate("friends")},
+                    onClick = { navController.navigate("friends") },
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                    label = { Text("Friends") }
+                    label = { Text("Friends", color = if (isDark) darkText else Color.Black) }
                 )
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
                     icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("History") }
+                    label = { Text("History", color = if (isDark) darkText else accentColor) }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("profile") },
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account") }
+                    label = { Text("Account", color = if (isDark) darkText else Color.Black) }
                 )
             }
-        }
+        },
+        containerColor = if (isDark) darkBackground else Color(0xFFE6F2FF)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFE6F2FF))
+                .then(
+                    if (isDark) Modifier.background(darkBackground)
+                    else Modifier.background(gradientBrush)
+                )
         ) {
+            // Header
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -80,7 +105,7 @@ fun HistoryScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = accentColor,
+                        tint = if (isDark) darkText else accentColor,
                         modifier = Modifier.padding(start = 7.dp)
                     )
                 }
@@ -88,12 +113,14 @@ fun HistoryScreen(
                 Text(
                     text = "History",
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        color = accentColor,
+                        color = if (isDark) darkText else accentColor,
                         fontWeight = FontWeight.Bold
                     ),
                     modifier = Modifier.padding(start = 17.dp)
                 )
             }
+
+            // History List
             LazyColumn(
                 contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -103,15 +130,76 @@ fun HistoryScreen(
                         Text(
                             text = "No activity yet.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = if (isDark) darkSecondaryText else Color.Gray,
                             modifier = Modifier.padding(16.dp)
                         )
                     }
                 } else {
                     items(historyList) { historyItem ->
-                        HistoryItemCard(historyItem)
+                        HistoryItemCard(historyItem, isDark)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun HistoryItemCard(item: HistoryItem, isDark: Boolean) {
+    val icon = when (item.type) {
+        ActionType.ADD -> Icons.Default.AttachMoney
+        ActionType.DELETE -> Icons.Default.Delete
+        ActionType.UPDATE -> Icons.Default.Restore
+        ActionType.CREATE -> Icons.Default.Group
+    }
+
+    val bgColor = when (item.type) {
+        ActionType.ADD -> if (isDark) Color(0xFF1565C0) else Color(0xFFBBDEFB)
+        ActionType.DELETE -> if (isDark) Color(0xFFD32F2F) else Color(0xFFFFCDD2)
+        ActionType.UPDATE -> if (isDark) Color(0xFFFBC02D) else Color(0xFFFFF9C4)
+        ActionType.CREATE -> if (isDark) Color(0xFF388E3C) else Color(0xFFC8E6C9)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) Color(0xFF1E1E1E) else Color.White
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(bgColor, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = if (isDark) Color.White else Color.Black)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (isDark) Color.White else Color.Black
+                )
+                Text(
+                    item.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDark) Color.LightGray else Color.Gray
+                )
+                Text(
+                    item.getFormattedTime(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDark) Color.Gray else Color.DarkGray
+                )
             }
         }
     }
@@ -132,49 +220,3 @@ data class HistoryItem(
 
 enum class ActionType { ADD, DELETE, UPDATE, CREATE }
 
-@Composable
-fun HistoryItemCard(item: HistoryItem) {
-    val icon = when (item.type) {
-        ActionType.ADD -> Icons.Default.AttachMoney
-        ActionType.DELETE -> Icons.Default.Delete
-        ActionType.UPDATE -> Icons.Default.Restore
-        ActionType.CREATE -> Icons.Default.Group
-    }
-    val bgColor = when (item.type) {
-        ActionType.ADD -> Color(0xFFBBDEFB)
-        ActionType.DELETE -> Color(0xFFFFCDD2)
-        ActionType.UPDATE -> Color(0xFFFFF9C4)
-        ActionType.CREATE -> Color(0xFFC8E6C9)
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .background(Color.White)
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(bgColor, shape = CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = Color.Black)
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium, color = Color.Black)
-                Text(item.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                Text(item.getFormattedTime(), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            }
-        }
-    }
-}

@@ -17,9 +17,7 @@ data class FriendRequest(
 data class Friend(
     val uid: String = "",
     val email: String = "",
-    val name: String = ""
 )
-
 
 class FriendsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -97,11 +95,10 @@ class FriendsViewModel : ViewModel() {
                         db.collection("users").document(friendId).get()
                             .addOnSuccessListener { userDoc ->
                                 val email = userDoc.getString("email") ?: "Unknown"
-                                val name = userDoc.getString("name") ?: "Unknown"  // 👈 fetch name
-                                Log.d("FriendsViewModel", "Fetched email: $email, name: $name")
+                                Log.d("FriendsViewModel", "Fetched email: $email")
 
                                 // add friend to list
-                                tempFriends.add(Friend(uid = friendId, email = email, name = name))
+                                tempFriends.add(Friend(uid = friendId, email = email))
 
                                 // update StateFlow with latest list
                                 _friends.value = tempFriends.toList()
@@ -110,7 +107,6 @@ class FriendsViewModel : ViewModel() {
                                 Log.e("FriendsViewModel", "Failed to fetch user: $friendId", it)
                             }
                     }
-
                 }
             }
     }

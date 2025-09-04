@@ -30,63 +30,77 @@ import com.example.smartsplit.screens.history.HistoryItemCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = viewModel()) {
+fun FriendsScreen(
+    navController: NavController,
+    viewModel: FriendsViewModel = viewModel()
+) {
+    val friends by viewModel.friends.collectAsState()
 
+    // Dark mode flag (replace with isSystemInDarkTheme() if you want)
+    val isDark = false
+
+    // Colors
     val primaryColor = Color(0xFF2196F3)
-    val accentColor = Color(0xFF2196F3)
-
+    val accentColor = primaryColor
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
             primaryColor.copy(alpha = 0.15f),
             Color.White
         )
     )
-    val friends by viewModel.friends.collectAsState()
+
+    val darkBackground = Color.Black
+    val darkCardBg = Color(0xFF1E1E1E)
+    val darkText = Color.White
+    val darkSecondaryText = Color.LightGray
+    val darkNavBar = Color(0xFF121212)
 
     Scaffold(
-        containerColor = Color.Transparent,
+        containerColor = if (isDark) darkBackground else Color.Transparent,
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = if (isDark) darkNavBar else Color.White) {
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("group") },
                     icon = { Icon(Icons.Default.Group, contentDescription = "Groups") },
-                    label = { Text("Groups") }
+                    label = { Text("Groups", color = if (isDark) darkText else Color.Black) }
                 )
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
                     icon = { Icon(Icons.Default.Person, contentDescription = "Friends") },
-                    label = { Text("Friends") }
+                    label = { Text("Friends", color = if (isDark) darkText else accentColor) }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate("history")},
+                    onClick = { navController.navigate("history") },
                     icon = { Icon(Icons.Default.List, contentDescription = "History") },
-                    label = { Text("History") }
+                    label = { Text("History", color = if (isDark) darkText else Color.Black) }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { navController.navigate("profile")},
+                    onClick = { navController.navigate("profile") },
                     icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account") }
+                    label = { Text("Account", color = if (isDark) darkText else Color.Black) }
                 )
             }
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Add new friend */ },
-                containerColor = primaryColor
+                onClick = { navController.navigate("addFriend") },
+                containerColor = if (isDark) darkText else primaryColor
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add friend", tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Add friend", tint = if (isDark) darkBackground else Color.White)
             }
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientBrush)
+                .then(
+                    if (isDark) Modifier.background(darkBackground)
+                    else Modifier.background(gradientBrush)
+                )
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
@@ -99,21 +113,20 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = accentColor,
-                        modifier=Modifier.padding(start = 7.dp)
+                        tint = if (isDark) darkText else accentColor,
+                        modifier = Modifier.padding(start = 7.dp)
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = "Friends",
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        color = accentColor,
+                        color = if (isDark) darkText else accentColor,
                         fontWeight = FontWeight.Bold
                     ),
-                    modifier=Modifier.padding(start = 17.dp)
+                    modifier = Modifier.padding(start = 17.dp)
                 )
             }
-            Spacer(Modifier.height(8.dp))
 
             Spacer(Modifier.height(12.dp))
 
@@ -129,25 +142,24 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
                         Icon(
                             imageVector = Icons.Default.Group,
                             contentDescription = "No friends",
-                            tint = accentColor,
+                            tint = if (isDark) darkSecondaryText else accentColor,
                             modifier = Modifier.size(96.dp)
                         )
                         Spacer(Modifier.height(16.dp))
                         Text(
                             text = "No friends yet",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Gray
+                            color = if (isDark) darkSecondaryText else Color.Gray
                         )
                     }
                 }
-            }
-            else {
+            } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(friends) { friend ->
-                        FriendCard(friendName = friend.name, accentColor = accentColor)
+                        FriendCard(friendName = friend.email, isDark = isDark, accentColor = accentColor)
                     }
                 }
             }
@@ -156,13 +168,13 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
 }
 
 @Composable
-fun FriendCard(friendName: String, accentColor: Color) {
+fun FriendCard(friendName: String, isDark: Boolean, accentColor: Color) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF1E1E1E) else Color.White),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
@@ -189,7 +201,7 @@ fun FriendCard(friendName: String, accentColor: Color) {
             Text(
                 text = friendName,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = Color.Black
+                color = if (isDark) Color.White else Color.Black
             )
 
             Spacer(Modifier.weight(1f))
@@ -200,6 +212,7 @@ fun FriendCard(friendName: String, accentColor: Color) {
         }
     }
 }
+
 
 @Composable
 fun AddFriendScreen(
@@ -271,189 +284,6 @@ fun AddFriendScreen(
             ) {
                 Text("Send Request", color = Color.White)
             }
-            @OptIn(ExperimentalMaterial3Api::class)
-            @Composable
-            fun FriendsScreen(
-                navController: NavController,
-                viewModel: FriendsViewModel = viewModel()
-            ) {
-                val accentColor = Color(0xFF2196F3)
-                val primaryColor = Color(0xFF2196F3)
-
-                val gradientBrush = Brush.verticalGradient(
-                    colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
-                )
-
-                val friends by viewModel.friends.collectAsState()
-
-                Scaffold(
-                    bottomBar = { /* ... your nav bar ... */ },
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { navController.navigate("addFriend") },
-                            containerColor = primaryColor
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add friend", tint = Color.White)
-                        }
-                    }
-                ) { padding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(gradientBrush)
-                            .padding(padding)
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        // header ...
-                        Spacer(Modifier.height(12.dp))
-
-                        if (friends.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("No friends yet", color = Color.Gray)
-                            }
-                        } else {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                items(friends) { friend ->
-                                    FriendCard(friendName = friend.email, accentColor = accentColor)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            @Composable
-            fun FriendCard(friendName: String, accentColor: Color) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(accentColor.copy(alpha = 0.2f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = accentColor
-                            )
-                        }
-
-                        Spacer(Modifier.width(16.dp))
-
-                        Text(
-                            text = friendName,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                            color = Color.Black
-                        )
-
-                        Spacer(Modifier.weight(1f))
-
-                        IconButton(onClick = { /* TODO: Settle up */ }) {
-                            Icon(Icons.Default.Receipt, contentDescription = "Settle up", tint = accentColor)
-                        }
-                    }
-                }
-            }
-
-            @Composable
-            fun AddFriendScreen(
-                navController: NavController,
-                viewModel: FriendsViewModel = viewModel()
-            ) {
-                val primaryColor = Color(0xFF2196F3)
-                val accentColor = Color(0xFF2196F3)
-
-                var email by remember { mutableStateOf("") }
-                var message by remember { mutableStateOf<String?>(null) }
-
-                val gradientBrush = Brush.verticalGradient(
-                    colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
-                )
-
-                Scaffold { padding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(gradientBrush)
-                            .padding(padding)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Top,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(5.dp)
-                        ) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = accentColor)
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = "Add Friends",
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    color = accentColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-
-                        Spacer(Modifier.height(20.dp))
-
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("Friend's Email ID") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(Icons.Default.Email, contentDescription = "Email Icon", tint = accentColor)
-                            }
-                        )
-
-                        Spacer(Modifier.height(24.dp))
-
-                        Button(
-                            onClick = {
-                                viewModel.sendFriendRequest(email) { success, msg ->
-                                    message = msg
-                                    if (success) {
-                                        navController.popBackStack()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                        ) {
-                            Text("Send Request", color = Color.White)
-                        }
-
-                        message?.let {
-                            Spacer(Modifier.height(16.dp))
-                            Text(it, color = if (it.contains("success")) Color.Green else Color.Red)
-                        }
-                    }
-                }
-            }
-
             message?.let {
                 Spacer(Modifier.height(16.dp))
                 Text(it, color = if (it.contains("success")) Color.Green else Color.Red)
