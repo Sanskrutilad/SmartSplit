@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,28 +40,36 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.FriendRequest
 import com.example.smartsplit.Viewmodel.FriendsViewModel
+import com.example.smartsplit.Viewmodel.GroupInvite
+import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendRequestsScreen(
     navController: NavController,
-    viewModel: FriendsViewModel = viewModel()
+    viewModel: FriendsViewModel = viewModel(),
+    groupViewModel: GroupViewModel = viewModel()
 ) {
     val primaryColor = Color(0xFF2196F3)
     val accentColor = Color(0xFF2196F3)
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
     )
-    val requests by viewModel.friendRequests.collectAsState()
+
+    val friendRequests by viewModel.friendRequests.collectAsState()
+    val groupInvites by viewModel.groupInvites.collectAsState()
+
     LaunchedEffect(Unit) {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
         if (currentUserId != null) {
             viewModel.fetchFriendRequests(currentUserId)
+            viewModel.fetchGroupInvites(currentUserId)
         }
     }
     Scaffold { padding ->
@@ -75,7 +86,7 @@ fun FriendRequestsScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = accentColor)
                 }
                 Text(
-                    "Friend Requests",
+                    "Requests & Invites",
                     style = MaterialTheme.typography.headlineSmall.copy(
                         color = accentColor,
                         fontWeight = FontWeight.Bold
@@ -85,25 +96,53 @@ fun FriendRequestsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            if (requests.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No pending requests", color = Color.Gray)
-                }
+            // Friend Requests Section
+            Text(
+                "Friend Requests",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+
+            if (friendRequests.isEmpty()) {
+                Text("No friend requests", color = Color.Gray)
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(requests) { (requestId, request) ->
+                    items(friendRequests) { (requestId, request) ->
                         RequestCard(
                             requestId = requestId,
                             request = request,
                             accentColor = accentColor,
                             onAccept = { viewModel.acceptRequest(requestId, request) },
                             onReject = { viewModel.rejectRequest(requestId) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Group Invites Section
+            Text(
+                "Group Invites",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+
+            if (groupInvites.isEmpty()) {
+                Text("No group invites", color = Color.Gray)
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(groupInvites) { (inviteId, invite) ->
+                        GroupInviteCard(
+                            inviteId = inviteId,
+                            invite = invite,
+                            accentColor = accentColor,
+                            onAccept = { viewModel.acceptGroupInvite(inviteId, invite) },
+                            onReject = { viewModel.rejectGroupInvite(inviteId) }
                         )
                     }
                 }
@@ -153,3 +192,38 @@ fun RequestCard(
     }
 }
 
+@Composable
+fun GroupInviteCard(
+    inviteId: String,
+    invite: GroupInvite,
+    accentColor: Color,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(invite.groupName, fontWeight = FontWeight.Bold)
+                Text("Invited by: ${invite.invitedBy}", color = Color.Gray, fontSize = 12.sp)
+            }
+            Row {
+                IconButton(onClick = onAccept) {
+                    Icon(Icons.Default.Check, contentDescription = "Accept", tint = accentColor)
+                }
+                IconButton(onClick = onReject) {
+                    Icon(Icons.Default.Close, contentDescription = "Reject", tint = Color.Red)
+                }
+            }
+        }
+    }
+}

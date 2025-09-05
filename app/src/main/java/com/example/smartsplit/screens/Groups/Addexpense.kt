@@ -1,28 +1,32 @@
 package com.example.smartsplit.screens.Groups
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.ExpenseViewModel
+import com.example.smartsplit.Viewmodel.Friend
+import com.example.smartsplit.Viewmodel.FriendsViewModel
+import com.example.smartsplit.Viewmodel.Group
+import com.example.smartsplit.Viewmodel.GroupMember
+import com.example.smartsplit.Viewmodel.GroupViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 val primaryColor = Color(0xFF2196F3)
 val accentColor = Color(0xFF2196F3)
@@ -35,21 +39,37 @@ val gradientBrush = Brush.verticalGradient(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(navController: NavController? = null) {
+fun AddExpenseScreen(
+    navController: NavController? = null,
+    friendsViewModel: FriendsViewModel = viewModel(),
+    groupViewModel: GroupViewModel = viewModel(),
+    expenseViewModel: ExpenseViewModel = viewModel() // To post expense
+) {
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
     var description by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var paidBy by remember { mutableStateOf("You") }
+    var paidBy: String? by remember { mutableStateOf("You") }
     var splitBy by remember { mutableStateOf("Equally") }
-    var withGroup by remember { mutableStateOf("All of Trip") }
 
-    var showSaveBtn by remember { mutableStateOf(false) }
+    // selected target (friend OR group)
+    var selectedFriend by remember { mutableStateOf<Friend?>(null) }
+    var selectedGroup by remember { mutableStateOf<Group?>(null) }
 
     // Dialog state
+    var showWithDialog by remember { mutableStateOf(false) }
     var showPaidByDialog by remember { mutableStateOf(false) }
     var showSplitDialog by remember { mutableStateOf(false) }
-    var showGroupDialog by remember { mutableStateOf(false) }
 
-    // Animate button visibility
+    // Load data
+    val friends by friendsViewModel.friends.collectAsState()
+    val groups by groupViewModel.myGroups.observeAsState(emptyList())
+    LaunchedEffect(currentUserId) {
+        friendsViewModel.fetchFriends(currentUserId)
+        groupViewModel.fetchMyGroups()
+    }
+
+    var showSaveBtn by remember { mutableStateOf(false) }
     LaunchedEffect(description, amount) {
         showSaveBtn = description.isNotBlank() && amount.isNotBlank()
     }
@@ -57,56 +77,47 @@ fun AddExpenseScreen(navController: NavController? = null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradientBrush)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Top
+            .padding(24.dp)
     ) {
-        // Back Arrow
         IconButton(onClick = { navController?.popBackStack() }) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = accentColor
-            )
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF2196F3))
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // Title
         Text(
             text = "Add expense",
             style = MaterialTheme.typography.headlineSmall.copy(
-                color = accentColor,
+                color = Color(0xFF2196F3),
                 fontWeight = FontWeight.Bold
             )
         )
 
         Spacer(Modifier.height(24.dp))
 
-        // With you and group section
-        ElevatedCard(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("With you and:")
-                Spacer(modifier = Modifier.width(8.dp))
-                AssistChip(
-                    onClick = { showGroupDialog = true },
-                    label = { Text(withGroup) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Flight, contentDescription = null, tint = primaryColor)
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = Color.Transparent
+        // With who?
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("With you and:")
+            Spacer(Modifier.width(8.dp))
+            AssistChip(
+                onClick = { showWithDialog = true },
+                label = {
+                    Text(
+                        when {
+                            selectedGroup != null -> "Group: ${selectedGroup!!.name}"
+                            selectedFriend != null -> "Friend: ${selectedFriend!!.email}"
+                            else -> "Choose"
+                        }
                     )
-                )
-            }
+                },
+                leadingIcon = {
+                    Icon(
+                        if (selectedGroup != null) Icons.Default.Group else Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color(0xFF2196F3)
+                    )
+                }
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -116,16 +127,7 @@ fun AddExpenseScreen(navController: NavController? = null) {
             value = description,
             onValueChange = { description = it },
             label = { Text("Description") },
-            placeholder = { Text("e.g. Dinner at café") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            leadingIcon = {
-                Icon(Icons.Default.Receipt, contentDescription = null, tint = primaryColor)
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryColor,
-                cursorColor = primaryColor
-            )
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(16.dp))
@@ -135,94 +137,66 @@ fun AddExpenseScreen(navController: NavController? = null) {
             value = amount,
             onValueChange = { amount = it },
             label = { Text("Amount") },
-            placeholder = { Text("0.00") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            leadingIcon = {
-                Text("₹", color = primaryColor, style = MaterialTheme.typography.titleMedium)
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryColor,
-                cursorColor = primaryColor
-            )
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(36.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // Paid by & Split row
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 10.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
-            ),
-            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+        // Paid by & Split
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 30.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("Paid by", color = Color.Black.copy(alpha = 0.8f))
-                AssistChip(
-                    onClick = { showPaidByDialog = true },
-                    label = { Text(paidBy) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = primaryColor.copy(alpha = 0.1f)
-                    )
-                )
-                Text("and split", color = Color.Black.copy(alpha = 0.8f))
-                AssistChip(
-                    onClick = { showSplitDialog = true },
-                    label = { Text(splitBy) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = primaryColor.copy(alpha = 0.1f)
-                    )
-                )
-            }
+            AssistChip(onClick = { showPaidByDialog = true }, label = { Text("Paid by: $paidBy") })
+            AssistChip(onClick = { showSplitDialog = true }, label = { Text("Split: $splitBy") })
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Animated Save button
-        AnimatedVisibility(visible = showSaveBtn) {
-            val scale by animateFloatAsState(targetValue = if (showSaveBtn) 1f else 0.8f)
-
+        AnimatedVisibility(visible = showSaveBtn && (selectedFriend != null || selectedGroup != null)) {
             Button(
-                onClick = { /* Save expense */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .graphicsLayer(scaleX = scale, scaleY = scale),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                onClick = {
+                    expenseViewModel.addExpense(
+                        description = description,
+                        amount = amount.toDouble(),
+                        paidBy = paidBy,
+                        splitBy = splitBy,
+                        groupId = selectedGroup?.id,
+                        friendId = selectedFriend?.uid
+                    )
+                    navController?.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    "Save Expense",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Text("Save Expense", color = Color.White)
             }
         }
     }
 
-    // 🔹 Paid By Dialog
-    if (showPaidByDialog) {
+    // 🔹 With (friend or group) dialog
+    if (showWithDialog) {
         AlertDialog(
-            onDismissRequest = { showPaidByDialog = false },
-            title = { Text("Select payer") },
+            onDismissRequest = { showWithDialog = false },
+            title = { Text("Select Friend or Group") },
             text = {
                 Column {
-                    listOf("You", "Alice", "Bob").forEach { option ->
+                    Text("Friends", fontWeight = FontWeight.Bold)
+                    friends.forEach { f ->
                         TextButton(onClick = {
-                            paidBy = option
-                            showPaidByDialog = false
-                        }) { Text(option) }
+                            selectedFriend = f
+                            selectedGroup = null
+                            showWithDialog = false
+                        }) { Text(f.email) }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Groups", fontWeight = FontWeight.Bold)
+                    groups.forEach { g ->
+                        TextButton(onClick = {
+                            selectedGroup = g
+                            selectedFriend = null
+                            showWithDialog = false
+                        }) { Text(g.name) }
                     }
                 }
             },
@@ -230,7 +204,53 @@ fun AddExpenseScreen(navController: NavController? = null) {
         )
     }
 
-    // 🔹 Split Method Dialog
+    // Load group members if group is selected
+    val groupMembers by groupViewModel.groupMembers.observeAsState(emptyList())
+
+    LaunchedEffect(selectedGroup) {
+        selectedGroup?.let {
+            groupViewModel.fetchGroupMembers(it.id) // fetch when group selected
+        }
+    }
+
+// 🔹 Paid By dialog
+    if (showPaidByDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaidByDialog = false },
+            title = { Text("Select Payer") },
+            text = {
+                Column {
+                    if (selectedGroup != null) {
+                        // Group case
+                        groupMembers.forEach { member ->
+                            TextButton(onClick = {
+                                paidBy = if (member.uid == currentUserId) "You" else member.email
+                                showPaidByDialog = false
+                            }) { if (member.uid == currentUserId) "You" else member.email?.let { Text(it) } }
+                        }
+                    } else if (selectedFriend != null) {
+                        // Friend case
+                        listOf("You", selectedFriend!!.email).forEach { option ->
+                            TextButton(onClick = {
+                                paidBy = option
+                                showPaidByDialog = false
+                            }) { Text(option) }
+                        }
+                    } else {
+                        Text("Please select a friend or group first")
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+
+    // For custom split inputs (shares or percentages)
+    // Keep track of split inputs
+    var splitInputs by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+
+// 🔹 Split method dialog
     if (showSplitDialog) {
         AlertDialog(
             onDismissRequest = { showSplitDialog = false },
@@ -240,34 +260,64 @@ fun AddExpenseScreen(navController: NavController? = null) {
                     listOf("Equally", "By shares", "By percentage").forEach { option ->
                         TextButton(onClick = {
                             splitBy = option
-                            showSplitDialog = false
+                            if (option == "Equally") {
+                                // Reset inputs since no manual entry needed
+                                splitInputs = emptyMap()
+                                showSplitDialog = false
+                            }
                         }) { Text(option) }
+                    }
+
+                    // If shares/percentage selected → show inputs for members
+                    if (splitBy == "By shares" || splitBy == "By percentage") {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = if (splitBy == "By shares") "Enter shares" else "Enter percentages",
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        val membersList = when {
+                            selectedGroup != null -> groupMembers
+                            selectedFriend != null -> listOf(
+                                GroupMember(uid = currentUserId, email = "You", accepted = true),
+                                GroupMember(uid = selectedFriend!!.uid, email = selectedFriend!!.email, accepted = true)
+                            )
+                            else -> emptyList()
+                        }
+
+                        membersList.forEach { member ->
+                            OutlinedTextField(
+                                value = splitInputs[member.uid] ?: "",
+                                onValueChange = { value ->
+                                    splitInputs = splitInputs.toMutableMap().apply { put(member.uid, value) }
+                                },
+                                label = {
+                                    if (member.uid == currentUserId) "You"
+                                    else member.email?.let {
+                                        Text(
+                                            it
+                                        )
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {
+                if (splitBy == "By shares" || splitBy == "By percentage") {
+                    TextButton(onClick = { showSplitDialog = false }) {
+                        Text("Done")
+                    }
+                }
+            }
         )
     }
 
-    // 🔹 Group Dialog
-    if (showGroupDialog) {
-        AlertDialog(
-            onDismissRequest = { showGroupDialog = false },
-            title = { Text("Select group") },
-            text = {
-                Column {
-                    listOf("All of Trip", "Roommates", "Friends").forEach { option ->
-                        TextButton(onClick = {
-                            withGroup = option
-                            showGroupDialog = false
-                        }) { Text(option) }
-                    }
-                }
-            },
-            confirmButton = {}
-        )
-    }
 }
+
 
 
 @Preview(showBackground = true, showSystemUi = true)

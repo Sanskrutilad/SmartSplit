@@ -124,22 +124,26 @@ class GroupViewModel : ViewModel() {
                 _createdGroupId.value = groupId
 
                 val memberRef = groupRef.collection("members").document(creatorId)
-                memberRef.set(
-                    mapOf(
-                        "uid" to creatorId,
-                        "role" to "admin",
-                        "accepted" to true,
-                        "joinedAt" to FieldValue.serverTimestamp()
-                    )
-                ).addOnSuccessListener {
-                    _message.value = "Group created successfully!"
-                    fetchGroupMembers(groupId)
-                    fetchMyGroups()
-                }.addOnFailureListener { e ->
-                    _message.value = "Failed to add creator as member: ${e.message}"
-                }
+                val memberData = mapOf(
+                    "uid" to creatorId,
+                    "role" to "admin",
+                    "accepted" to true,
+                    "joinedAt" to FieldValue.serverTimestamp()
+                )
+                memberRef.set(memberData)
+                    .addOnSuccessListener {
+                        _message.value = "Group created successfully!"
+                        fetchMyGroups() // Refresh group list
+                    }
+                    .addOnFailureListener { e ->
+                        _message.value = "Failed to add creator as member: ${e.message}"
+                    }
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Failed to create group: ${e.message}"
             }
     }
+
 
 
     /**
@@ -147,31 +151,45 @@ class GroupViewModel : ViewModel() {
      */
     fun fetchMyGroups() {
         val currentUser = auth.currentUser ?: return
-        db.collection("groups")
-            .whereEqualTo("createdBy", currentUser.uid)
-            .get()
-            .addOnSuccessListener { result ->
-                val groups = mutableListOf<Group>()
+        val userId = currentUser.uid
 
-                result.documents.forEach { doc ->
-                    val creatorUid = doc.getString("createdBy") ?: ""
-                    getUserEmailFromUid(creatorUid) { email ->
-                        groups.add(
-                            Group(
-                                id = doc.id,
-                                name = doc.getString("name") ?: "",
-                                type = doc.getString("type") ?: "",
-                                createdBy = email ?: creatorUid // fallback UID if email not found
-                            )
-                        )
-                        _myGroups.value = groups
-                    }
+        db.collection("groups")
+            .get()
+            .addOnSuccessListener { groupDocs ->
+                val groups = mutableListOf<Group>()
+                val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
+
+                for (doc in groupDocs) {
+                    val groupId = doc.id
+                    val membersTask = db.collection("groups")
+                        .document(groupId)
+                        .collection("members")
+                        .document(userId)
+                        .get()
+                        .addOnSuccessListener { memberDoc ->
+                            if (memberDoc.exists()) {
+                                val creatorUid = doc.getString("createdBy") ?: ""
+                                getUserEmailFromUid(creatorUid) { email ->
+                                    groups.add(
+                                        Group(
+                                            id = groupId,
+                                            name = doc.getString("name") ?: "",
+                                            type = doc.getString("type") ?: "",
+                                            createdBy = email ?: creatorUid
+                                        )
+                                    )
+                                    _myGroups.value = groups
+                                }
+                            }
+                        }
+                    tasks.add(membersTask)
                 }
             }
             .addOnFailureListener { e ->
                 _message.value = "Failed to fetch groups: ${e.message}"
             }
     }
+
 
     /**
      * Helper: Fetch user email by UID from "users" collection
