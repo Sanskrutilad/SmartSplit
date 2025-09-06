@@ -172,7 +172,6 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                     fontSize = 16.sp,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-                // --- Preferences Card ---
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -182,8 +181,6 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                     colors = CardDefaults.cardColors(containerColor = cardColor)
                 ) {
                     SettingsItem(title = "Notifications", description = "") {}
-                    Divider()
-                    SettingsItem(title = "Language", description = "English") {navController.navigate("language")}
                     Divider()
                     SettingsItem(title = "Dark Mode", description = "On") {navController.navigate("darkMode")}
                 }

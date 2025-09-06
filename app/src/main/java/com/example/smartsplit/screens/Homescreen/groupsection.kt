@@ -15,8 +15,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
@@ -233,84 +235,83 @@ fun GroupSectionScreen(
 
 @Composable
 fun GroupCard(group: Group, onClick: () -> Unit) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    // Animate padding, color, and scale on press
-    val animatedPadding by animateDpAsState(targetValue = if (isPressed) 4.dp else 12.dp)
-    val animatedColor by animateColorAsState(targetValue = if (isPressed) Color(0xFFE3F2FD) else Color.White)
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.97f else 1f)
-    val elevation by animateDpAsState(targetValue = if (isPressed) 12.dp else 6.dp)
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp) // increased height
-            .padding(horizontal = animatedPadding, vertical = 8.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                        onClick()
-                    }
-                )
-            },
-        colors = CardDefaults.cardColors(containerColor = animatedColor),
-        elevation = CardDefaults.cardElevation(elevation),
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val icon = when (group.type.lowercase()) {
-                "home" -> Icons.Default.Home
-                "trip" -> Icons.Default.Flight
-                "work" -> Icons.Default.Work
-                "Friends" -> Icons.Default.Work
-                else -> Icons.Default.Flight
-            }
+            // Circle with icon
             Box(
                 modifier = Modifier
-                    .size(56.dp) // outer circle size
+                    .size(56.dp)
                     .clip(CircleShape)
-                    .border(2.dp, Color(0xFF0077CC), CircleShape) // circle border
-                    .background(Color.White), // background inside circle
+                    .background(Color(0xFF0077CC).copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
+                val icon = when (group.type.lowercase()) {
+                    "travel" -> Icons.Default.Flight
+                    "work" -> Icons.Default.Work
+                    "friends" -> Icons.Default.Person
+                    "family" -> Icons.Default.Home
+                    else -> Icons.Default.List
+                }
+
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = group.type,
                     tint = Color(0xFF0077CC),
-                    modifier = Modifier.size(28.dp) // icon size inside circle
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
+            Spacer(modifier = Modifier.width(16.dp))
 
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     text = group.name,
-                    fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF222222), // slightly softer black
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF222222)
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = group.type,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF666666) // softer gray
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+                Text(
+                    text = group.createdBy,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
             }
+
+            Icon(
+                imageVector = Icons.Default.ArrowForwardIos,
+                contentDescription = "Go to group",
+                tint = Color.Gray,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
+
