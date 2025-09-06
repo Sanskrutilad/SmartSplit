@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.FriendsViewModel
-import com.example.smartsplit.screens.history.HistoryItemCard
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +80,6 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
             }
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -113,7 +111,6 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
                 )
             }
             Spacer(Modifier.height(8.dp))
-
             Spacer(Modifier.height(12.dp))
 
             if (friends.isEmpty()) {
@@ -146,8 +143,9 @@ fun FriendsScreen( navController: NavController, viewModel: FriendsViewModel = v
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(friends) { friend ->
-                        FriendCard(friendName = friend.email, accentColor = accentColor)
+                        FriendCard(friendName = friend.name, accentColor = accentColor)
                     }
+
                 }
             }
         }

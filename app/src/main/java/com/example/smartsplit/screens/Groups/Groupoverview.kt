@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.ExpenseViewModel
 import com.example.smartsplit.Viewmodel.Friend
 import com.example.smartsplit.Viewmodel.FriendsViewModel
 import com.example.smartsplit.Viewmodel.Group
@@ -57,7 +60,8 @@ fun NewGroupScreen(
     navController: NavController,
     groupId: String,
     viewModel: GroupViewModel = viewModel(),
-    friendsViewModel: FriendsViewModel = viewModel()
+    friendsViewModel: FriendsViewModel = viewModel(),
+    expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val primaryColor = Color(0xFF2196F3)
     val accentColor = Color(0xFF2196F3)
@@ -80,6 +84,10 @@ fun NewGroupScreen(
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
 
+    val expenses by expenseViewModel.groupExpenses.observeAsState(emptyList())
+    LaunchedEffect(groupId) {
+        expenseViewModel.fetchGroupExpenses(groupId)
+    }
     // Friends list
     val friends by friendsViewModel.friends.collectAsState()
 
@@ -217,9 +225,200 @@ fun NewGroupScreen(
                         }
                     }
                 }
-                "Settle up" -> Text("💸 Settle up feature coming soon...", modifier = Modifier.padding(16.dp))
-                "Balance" -> Text("📊 Balance details will be shown here.", modifier = Modifier.padding(16.dp))
-                "Total" -> Text("🧾 Total expenses summary here.", modifier = Modifier.padding(16.dp))
+                "Settle up" -> {
+                    val settlements = expenseViewModel.calculateSettlements(expenses)
+                    val mySettlements = settlements.filter { it.from == currentUserId } // 🔹 Only what I owe
+
+                    if (mySettlements.isEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(Color(0xFFE8F5E9)), // light green bg
+                            border = BorderStroke(1.dp, Color(0xFF2E7D32))
+                        ) {
+                            Text(
+                                "🎉 You’re all settled up!",
+                                modifier = Modifier.padding(16.dp),
+                                color = Color(0xFF2E7D32),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(Color.White),
+                            elevation= CardDefaults.cardElevation(4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Your pending settlements:", fontWeight = FontWeight.SemiBold)
+
+                                mySettlements.forEach { settlement ->
+                                    val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Pay to $toEmail", fontWeight = FontWeight.Bold)
+                                            Text("₹${"%.2f".format(settlement.amount)}", color = Color.Red)
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                // 🔹 Later we can add UPI intent here
+                                            },
+                                            shape = RoundedCornerShape(50),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                        ) {
+                                            Text("Pay", color = Color.White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "Balance" -> {
+                    val settlements = expenseViewModel.calculateSettlements(expenses)
+
+                    // Group settlements per member
+                    val settlementsByMember = members.associate { member ->
+                        val uid = member.uid
+                        val email = member.email
+
+                        val owes = settlements.filter { it.from == uid }
+                        val lents = settlements.filter { it.to == uid }
+
+                        email to (owes to lents)
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "Balances",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
+
+                        settlementsByMember.forEach { (email, pair) ->
+                            val (owes, lents) = pair
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(Color.White),
+                                elevation = CardDefaults.cardElevation(3.dp),
+                                border = BorderStroke(1.dp, Color.LightGray)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    // Member header
+                                    Text(
+                                        email ?: "Unknown",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF1565C0)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+
+                                    if (owes.isEmpty() && lents.isEmpty()) {
+                                        Text("• Settled up", color = Color.Gray, fontSize = 14.sp)
+                                    } else {
+                                        // Show owes
+                                        owes.forEach { settlement ->
+                                            val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+                                            Text(
+                                                "• Owes to $toEmail: ₹${"%.2f".format(settlement.amount)}",
+                                                color = Color(0xFFD32F2F),
+                                                fontSize = 14.sp
+                                            )
+                                        }
+
+                                        // Show lents
+                                        lents.forEach { settlement ->
+                                            val fromEmail = members.find { it.uid == settlement.from }?.email ?: settlement.from
+                                            Text(
+                                                "• Lent from $fromEmail: ₹${"%.2f".format(settlement.amount)}",
+                                                color = Color(0xFF2E7D32),
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "Total" -> {
+                    val totalSpending = expenses.sumOf { it.amount }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()), // 🔹 Makes column scrollable
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // 🔹 Group Total Spending Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(Color.White),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            border = BorderStroke(1.dp, Color.Gray)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Group Total Spending", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "₹${"%.2f".format(totalSpending)}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    color = Color(0xFF2196F3)
+                                )
+                            }
+                        }
+
+                        // 🔹 Cards for each expense
+                        expenses.forEach { expense ->
+                            val payer = members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(Color.White),
+                                elevation = CardDefaults.cardElevation(2.dp),
+                                border = BorderStroke(1.dp, Color.LightGray)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(expense.description, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "₹${"%.2f".format(expense.amount)}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF4CAF50)
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text("Paid by $payer", fontSize = 13.sp, color = Color.Gray)
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+
+
             }
 
             Spacer(Modifier.height(20.dp))

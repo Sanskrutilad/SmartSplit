@@ -43,31 +43,43 @@ fun AddExpenseScreen(
     navController: NavController? = null,
     friendsViewModel: FriendsViewModel = viewModel(),
     groupViewModel: GroupViewModel = viewModel(),
-    expenseViewModel: ExpenseViewModel = viewModel() // To post expense
+    expenseViewModel: ExpenseViewModel = viewModel()
 ) {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     var description by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
-    var paidBy: String? by remember { mutableStateOf("You") }
     var splitBy by remember { mutableStateOf("Equally") }
+
+    // store payer correctly
+    var paidByUid by remember { mutableStateOf(currentUserId) }
+    var paidByLabel by remember { mutableStateOf("You") }
 
     // selected target (friend OR group)
     var selectedFriend by remember { mutableStateOf<Friend?>(null) }
     var selectedGroup by remember { mutableStateOf<Group?>(null) }
 
-    // Dialog state
+    // dialogs
     var showWithDialog by remember { mutableStateOf(false) }
     var showPaidByDialog by remember { mutableStateOf(false) }
     var showSplitDialog by remember { mutableStateOf(false) }
 
-    // Load data
+    // friends & groups
     val friends by friendsViewModel.friends.collectAsState()
     val groups by groupViewModel.myGroups.observeAsState(emptyList())
     LaunchedEffect(currentUserId) {
         friendsViewModel.fetchFriends(currentUserId)
         groupViewModel.fetchMyGroups()
     }
+
+    // group members MUST be above any usage
+    val groupMembers by groupViewModel.groupMembers.observeAsState(emptyList())
+    LaunchedEffect(selectedGroup) {
+        selectedGroup?.let { groupViewModel.fetchGroupMembers(it.id) }
+    }
+
+    // custom split inputs MUST be above usage
+    var splitInputs by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
     var showSaveBtn by remember { mutableStateOf(false) }
     LaunchedEffect(description, amount) {
@@ -80,7 +92,7 @@ fun AddExpenseScreen(
             .padding(24.dp)
     ) {
         IconButton(onClick = { navController?.popBackStack() }) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF2196F3))
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = primaryColor)
         }
 
         Spacer(Modifier.height(12.dp))
@@ -88,7 +100,7 @@ fun AddExpenseScreen(
         Text(
             text = "Add expense",
             style = MaterialTheme.typography.headlineSmall.copy(
-                color = Color(0xFF2196F3),
+                color = primaryColor,
                 fontWeight = FontWeight.Bold
             )
         )
@@ -105,16 +117,17 @@ fun AddExpenseScreen(
                     Text(
                         when {
                             selectedGroup != null -> "Group: ${selectedGroup!!.name}"
-                            selectedFriend != null -> "Friend: ${selectedFriend!!.email}"
+                            selectedFriend != null -> "Friend: ${selectedFriend!!.name}" // use name
                             else -> "Choose"
                         }
                     )
+
                 },
                 leadingIcon = {
                     Icon(
                         if (selectedGroup != null) Icons.Default.Group else Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color(0xFF2196F3)
+                        tint = primaryColor
                     )
                 }
             )
@@ -122,7 +135,6 @@ fun AddExpenseScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Description input
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -132,7 +144,6 @@ fun AddExpenseScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Amount input
         OutlinedTextField(
             value = amount,
             onValueChange = { amount = it },
@@ -143,12 +154,11 @@ fun AddExpenseScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // Paid by & Split
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            AssistChip(onClick = { showPaidByDialog = true }, label = { Text("Paid by: $paidBy") })
+            AssistChip(onClick = { showPaidByDialog = true }, label = { Text("Paid by: $paidByLabel") })
             AssistChip(onClick = { showSplitDialog = true }, label = { Text("Split: $splitBy") })
         }
 
@@ -157,14 +167,37 @@ fun AddExpenseScreen(
         AnimatedVisibility(visible = showSaveBtn && (selectedFriend != null || selectedGroup != null)) {
             Button(
                 onClick = {
+                    val amt = amount.toDoubleOrNull() ?: return@Button
+                    val membersList: List<GroupMember> = when {
+                        selectedGroup != null -> groupMembers
+                        selectedFriend != null -> listOf(
+                            GroupMember(uid = currentUserId, email = "You", accepted = true),
+                            GroupMember(uid = selectedFriend!!.uid, email = selectedFriend!!.email, accepted = true)
+                        )
+                        else -> emptyList()
+                    }
+
+                    // optional: simple validation for custom splits
+                    if (splitBy == "By percentage") {
+                        val totalPct = membersList.sumOf { (splitInputs[it.uid]?.toDoubleOrNull() ?: 0.0) }
+                        if (kotlin.math.abs(totalPct - 100.0) > 0.01) return@Button
+                    }
+                    if (splitBy == "By shares") {
+                        val totalShares = splitInputs.values.sumOf { it.toDoubleOrNull() ?: 0.0 }
+                        if (totalShares <= 0.0) return@Button
+                    }
+
                     expenseViewModel.addExpense(
                         description = description,
-                        amount = amount.toDouble(),
-                        paidBy = paidBy,
+                        amount = amt,
+                        paidBy = paidByUid,          // ✅ pass UID
                         splitBy = splitBy,
+                        members = membersList,
                         groupId = selectedGroup?.id,
-                        friendId = selectedFriend?.uid
+                        friendId = selectedFriend?.uid,
+                        splitInputs = splitInputs
                     )
+
                     navController?.popBackStack()
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -174,7 +207,7 @@ fun AddExpenseScreen(
         }
     }
 
-    // 🔹 With (friend or group) dialog
+    // Friend or Group dialog
     if (showWithDialog) {
         AlertDialog(
             onDismissRequest = { showWithDialog = false },
@@ -186,6 +219,9 @@ fun AddExpenseScreen(
                         TextButton(onClick = {
                             selectedFriend = f
                             selectedGroup = null
+                            // reset payer defaults
+                            paidByUid = currentUserId
+                            paidByLabel = "You"
                             showWithDialog = false
                         }) { Text(f.email) }
                     }
@@ -195,6 +231,8 @@ fun AddExpenseScreen(
                         TextButton(onClick = {
                             selectedGroup = g
                             selectedFriend = null
+                            paidByUid = currentUserId
+                            paidByLabel = "You"
                             showWithDialog = false
                         }) { Text(g.name) }
                     }
@@ -204,16 +242,7 @@ fun AddExpenseScreen(
         )
     }
 
-    // Load group members if group is selected
-    val groupMembers by groupViewModel.groupMembers.observeAsState(emptyList())
-
-    LaunchedEffect(selectedGroup) {
-        selectedGroup?.let {
-            groupViewModel.fetchGroupMembers(it.id) // fetch when group selected
-        }
-    }
-
-// 🔹 Paid By dialog
+    // Paid By dialog
     if (showPaidByDialog) {
         AlertDialog(
             onDismissRequest = { showPaidByDialog = false },
@@ -221,20 +250,25 @@ fun AddExpenseScreen(
             text = {
                 Column {
                     if (selectedGroup != null) {
-                        // Group case
                         groupMembers.forEach { member ->
                             TextButton(onClick = {
-                                paidBy = if (member.uid == currentUserId) "You" else member.email
+                                paidByUid = member.uid
+                                paidByLabel = if (member.uid == currentUserId) "You" else (member.email ?: member.uid)
                                 showPaidByDialog = false
-                            }) { if (member.uid == currentUserId) "You" else member.email?.let { Text(it) } }
+                            }) {
+                                Text(if (member.uid == currentUserId) "You" else (member.email ?: member.uid))
+                            }
                         }
                     } else if (selectedFriend != null) {
-                        // Friend case
-                        listOf("You", selectedFriend!!.email).forEach { option ->
+                        listOf(
+                            GroupMember(uid = currentUserId, email = "You", accepted = true),
+                            GroupMember(uid = selectedFriend!!.uid, email = selectedFriend!!.email, accepted = true)
+                        ).forEach { m ->
                             TextButton(onClick = {
-                                paidBy = option
+                                paidByUid = m.uid
+                                paidByLabel = if (m.uid == currentUserId) "You" else (m.email ?: m.uid)
                                 showPaidByDialog = false
-                            }) { Text(option) }
+                            }) { Text(if (m.uid == currentUserId) "You" else (m.email ?: m.uid)) }
                         }
                     } else {
                         Text("Please select a friend or group first")
@@ -245,12 +279,7 @@ fun AddExpenseScreen(
         )
     }
 
-
-    // For custom split inputs (shares or percentages)
-    // Keep track of split inputs
-    var splitInputs by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-
-// 🔹 Split method dialog
+    // Split method dialog
     if (showSplitDialog) {
         AlertDialog(
             onDismissRequest = { showSplitDialog = false },
@@ -261,14 +290,12 @@ fun AddExpenseScreen(
                         TextButton(onClick = {
                             splitBy = option
                             if (option == "Equally") {
-                                // Reset inputs since no manual entry needed
                                 splitInputs = emptyMap()
                                 showSplitDialog = false
                             }
                         }) { Text(option) }
                     }
 
-                    // If shares/percentage selected → show inputs for members
                     if (splitBy == "By shares" || splitBy == "By percentage") {
                         Spacer(Modifier.height(12.dp))
                         Text(
@@ -291,16 +318,11 @@ fun AddExpenseScreen(
                                 onValueChange = { value ->
                                     splitInputs = splitInputs.toMutableMap().apply { put(member.uid, value) }
                                 },
-                                label = {
-                                    if (member.uid == currentUserId) "You"
-                                    else member.email?.let {
-                                        Text(
-                                            it
-                                        )
-                                    }
-                                },
+                                label = { Text(if (member.uid == currentUserId) "You" else (member.email ?: member.uid)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
                             )
                         }
                     }
@@ -315,7 +337,6 @@ fun AddExpenseScreen(
             }
         )
     }
-
 }
 
 

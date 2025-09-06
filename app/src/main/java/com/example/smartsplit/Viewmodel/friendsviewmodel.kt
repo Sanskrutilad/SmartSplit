@@ -17,8 +17,10 @@ data class FriendRequest(
 
 data class Friend(
     val uid: String = "",
-    val email: String = "",
+    val name: String = "",   // user name
+    val email: String = ""   // keep email as before
 )
+
 
 data class GroupInvite(
     val groupId: String = "",
@@ -99,8 +101,6 @@ class FriendsViewModel : ViewModel() {
                     return@addSnapshotListener
                 }
 
-                Log.d("FriendsViewModel", "Friends snapshot size: ${snapshot.size()}")
-
                 val tempFriends = mutableListOf<Friend>()
 
                 snapshot.documents.forEach { doc ->
@@ -111,7 +111,8 @@ class FriendsViewModel : ViewModel() {
                         db.collection("users").document(friendId).get()
                             .addOnSuccessListener { userDoc ->
                                 val email = userDoc.getString("email") ?: "Unknown"
-                                tempFriends.add(Friend(uid = friendId, email = email))
+                                val name = userDoc.getString("name") ?: email // fallback to email
+                                tempFriends.add(Friend(uid = friendId, name = name, email = email))
                                 _friends.value = tempFriends.toList()
                             }
                             .addOnFailureListener {
