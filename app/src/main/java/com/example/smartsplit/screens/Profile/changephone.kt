@@ -1,7 +1,8 @@
 package com.example.smartsplit.screens.Profile
 
-
+import accentColor
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,7 +10,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -21,10 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
-import com.example.smartsplit.screens.Groups.accentColor
+import com.example.smartsplit.data.DarkModeViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,19 +37,36 @@ fun ChangePhoneNumberScreen(
     navController: NavController,
     viewModel: LoginScreenViewModel = viewModel()
 ) {
+    // Dark mode state
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+
+    // Dark mode colors
+    val darkBackground = Color(0xFF121212)
+    val darkCard = Color(0xFF1E1E1E)
+    val darkText = Color(0xFFFFFFFF)
+    val darkSecondaryText = Color(0xFFB3B3B3)
+
+    val lightPrimaryColor = Color(0xFF2196F3)
+    val lightGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), Color.White)
+    )
+
+    val darkGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), darkBackground)
+    )
+
     val user by viewModel.user.observeAsState()
 
     LaunchedEffect(Unit) {
         viewModel.getUserData()
     }
-
-    val primaryColor = Color(0xFF2196F3) // 🔵 Blue
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(
-            primaryColor.copy(alpha = 0.15f),
-            Color.White
-        )
-    )
 
     var phoneNumber by remember { mutableStateOf("") }
 
@@ -56,10 +77,15 @@ fun ChangePhoneNumberScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = gradientBrush)
+            .background(
+                brush = if (isDark) Brush.linearGradient(
+                    colors = listOf(darkBackground, darkBackground) // Solid dark background
+                ) else lightGradientBrush
+            )
             .padding(18.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         // Back button
         Row(
             modifier = Modifier
@@ -72,7 +98,7 @@ fun ChangePhoneNumberScreen(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = accentColor
+                    tint = if (isDark) darkText else lightPrimaryColor
                 )
             }
         }
@@ -81,12 +107,12 @@ fun ChangePhoneNumberScreen(
         Surface(
             modifier = Modifier.size(90.dp),
             shape = CircleShape,
-            color = Color.LightGray.copy(alpha = 0.5f)
+            color = if (isDark) darkSecondaryText else Color.LightGray.copy(alpha = 0.5f)
         ) {
             Icon(
                 imageVector = Icons.Filled.AccountCircle,
                 contentDescription = "Profile",
-                tint = Color.DarkGray,
+                tint = if (isDark) darkText else Color.DarkGray,
                 modifier = Modifier.fillMaxSize().padding(8.dp)
             )
         }
@@ -98,7 +124,7 @@ fun ChangePhoneNumberScreen(
             text = "Change Phone Number",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = if (isDark) darkText else Color.Black
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -111,11 +137,20 @@ fun ChangePhoneNumberScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Phone
             ),
-            placeholder = { Text("Enter your phone number", color = Color.Gray) },
+            placeholder = {
+                Text(
+                    "Enter your phone number",
+                    color = if (isDark) darkSecondaryText else Color.Gray
+                )
+            },
             trailingIcon = {
                 if (phoneNumber.isNotEmpty()) {
                     IconButton(onClick = { phoneNumber = "" }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Clear", tint = primaryColor)
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Clear",
+                            tint = if (isDark) darkText else lightPrimaryColor
+                        )
                     }
                 }
             },
@@ -124,11 +159,11 @@ fun ChangePhoneNumberScreen(
                 .height(55.dp),
             shape = RoundedCornerShape(28.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White.copy(alpha = 0.2f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
-                cursorColor = primaryColor,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+                focusedContainerColor = if (isDark) darkCard else Color.White.copy(alpha = 0.2f),
+                unfocusedContainerColor = if (isDark) darkCard else Color.White.copy(alpha = 0.1f),
+                cursorColor = if (isDark) darkText else lightPrimaryColor,
+                focusedTextColor = if (isDark) darkText else Color.Black,
+                unfocusedTextColor = if (isDark) darkText else Color.Black
             )
         )
 
@@ -145,7 +180,9 @@ fun ChangePhoneNumberScreen(
             },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isDark) lightPrimaryColor else Color(0xFF1E88E5)
+            )
         ) {
             Text("Save", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }

@@ -5,12 +5,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 import android.util.Patterns
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -23,10 +26,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.data.DarkModeViewModel
 import com.google.firebase.auth.FirebaseAuth
+import darkBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +40,32 @@ fun UpdateEmailScreen(
     navController: NavController,
     viewModel: LoginScreenViewModel = viewModel()
 ) {
+    // Dark mode state
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+
+    // Dark mode colors
+    val darkBackground = Color(0xFF121212)
+    val darkCard = Color(0xFF1E1E1E)
+    val darkText = Color(0xFFFFFFFF)
+    val darkSecondaryText = Color(0xFFB3B3B3)
+    val darkFieldBorder = Color.White
+
+    val lightPrimaryColor = Color(0xFF2196F3)
+    val lightGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), Color.White)
+    )
+
+    val darkGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), darkBackground)
+    )
+
     val user by viewModel.user.observeAsState()
     var email by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
@@ -42,14 +74,6 @@ fun UpdateEmailScreen(
     LaunchedEffect(user) {
         email = user?.email ?: ""
     }
-
-    val primaryColor = Color(0xFF2196F3)
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(
-            primaryColor.copy(alpha = 0.15f),
-            Color.White
-        )
-    )
 
     val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
@@ -63,7 +87,7 @@ fun UpdateEmailScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = primaryColor
+                            tint = if (isDark) darkText else lightPrimaryColor
                         )
                     }
                 },
@@ -99,7 +123,9 @@ fun UpdateEmailScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) lightPrimaryColor else lightPrimaryColor
+                    )
                 ) {
                     Text("Next", color = Color.White)
                 }
@@ -109,15 +135,20 @@ fun UpdateEmailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(brush = gradientBrush)
+                .background(
+                    brush = if (isDark) Brush.linearGradient(
+                        colors = listOf(darkBackground, darkBackground) // Solid dark background
+                    ) else lightGradientBrush
+                )
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Spacer(Modifier.height(16.dp))
             Text(
                 text = "Update Email Address",
-                color = Color.Black,
+                color = if (isDark) darkText else Color.Black,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -128,7 +159,7 @@ fun UpdateEmailScreen(
             Text(
                 text = "This will change the email address you use\n" +
                         "to log in...",
-                color = Color.Gray,
+                color = if (isDark) darkSecondaryText else Color.Gray,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -140,23 +171,32 @@ fun UpdateEmailScreen(
                 value = email,
                 onValueChange = { email = it },
                 singleLine = true,
-                placeholder = { Text("name@example.com", color = Color.Gray) },
+                placeholder = {
+                    Text(
+                        "name@example.com",
+                        color = if (isDark) darkSecondaryText else Color.Gray
+                    )
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 trailingIcon = {
                     if (email.isNotEmpty()) {
                         IconButton(onClick = { email = "" }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Clear", tint = primaryColor)
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "Clear",
+                                tint = if (isDark) darkText else lightPrimaryColor
+                            )
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.2f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    cursorColor = primaryColor,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
+                    focusedContainerColor = if (isDark) darkCard else Color.White.copy(alpha = 0.2f),
+                    unfocusedContainerColor = if (isDark) darkCard else Color.White.copy(alpha = 0.1f),
+                    cursorColor = if (isDark) darkText else lightPrimaryColor,
+                    focusedTextColor = if (isDark) darkText else Color.Black,
+                    unfocusedTextColor = if (isDark) darkText else Color.Black
                 )
             )
         }
@@ -165,8 +205,18 @@ fun UpdateEmailScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Email Update", color = Color.Black) },
-            text = { Text(dialogMessage, color = Color.Black) },
+            title = {
+                Text(
+                    "Email Update",
+                    color = if (isDark) darkText else Color.Black
+                )
+            },
+            text = {
+                Text(
+                    dialogMessage,
+                    color = if (isDark) darkText else Color.Black
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showDialog = false
@@ -177,10 +227,10 @@ fun UpdateEmailScreen(
                         }
                     }
                 }) {
-                    Text("OK", color = primaryColor)
+                    Text("OK", color = if (isDark) darkText else lightPrimaryColor)
                 }
             },
-            containerColor = Color.White
+            containerColor = if (isDark) darkCard else Color.White
         )
     }
 }

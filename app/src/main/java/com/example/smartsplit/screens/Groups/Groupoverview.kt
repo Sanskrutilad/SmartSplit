@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PeopleOutline
@@ -49,10 +52,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.ActivityTypes
@@ -64,6 +69,7 @@ import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
 import com.example.smartsplit.Viewmodel.formatDate
 import com.example.smartsplit.Viewmodel.logActivity
+import com.example.smartsplit.data.DarkModeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
@@ -77,7 +83,14 @@ val groupTypes = listOf(
     "Grocery" to Icons.Default.ShoppingCart,
     "Other" to Icons.Default.NoteAdd
 )
-
+val primaryColor = Color(0xFF2196F3)
+val accentColor = Color(0xFF2196F3)
+val darkBackground = Color(0xFF121212)
+val darkCard = Color(0xFF1E1E1E)
+val darkText = Color(0xFFFFFFFF)
+val darkSecondaryText = Color(0xFFB3B3B3)
+val darkFieldBorder = Color.White
+val DarkOnSurface = Color(0xFFFFFFFF)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewGroupScreen(
@@ -87,10 +100,24 @@ fun NewGroupScreen(
     friendsViewModel: FriendsViewModel = viewModel(),
     expenseViewModel: ExpenseViewModel = viewModel()
 ) {
-    val primaryColor = Color(0xFF2196F3)
-    val accentColor = Color(0xFF2196F3)
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
+    // Dark mode state
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+
+    val lightPrimaryColor = Color(0xFF2196F3)
+    val lightAccentColor = Color(0xFF2196F3)
+    val lightGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), Color.White)
+    )
+
+    val darkGradientBrush = Brush.verticalGradient(
+        colors = listOf(lightPrimaryColor.copy(alpha = 0.15f), darkBackground)
     )
 
     // UI States
@@ -120,8 +147,6 @@ fun NewGroupScreen(
     var showModificationDialog by remember { mutableStateOf(false) }
     var currentlyEditingSettlement by remember { mutableStateOf<com.example.smartsplit.Viewmodel.Settlement?>(null) }
     var amountInput by remember { mutableStateOf("") }
-// Add these state variables at the top of your composable
-
 
     LaunchedEffect(groupId) {
         expenseViewModel.fetchGroupExpenses(groupId)
@@ -129,9 +154,11 @@ fun NewGroupScreen(
         // Reset modified amounts when data is refreshed
         modifiedAmounts = emptyMap()
     }
+
     // Friends list
     val friends by friendsViewModel.friends.collectAsState()
-// Calculate total spending per member for PieChart
+
+    // Calculate total spending per member for PieChart
     val memberExpenses = members.associate { member ->
         val total = expenses.filter { it.paidBy == member.uid }.sumOf { it.amount }.toFloat()
         val name = member.name ?: member.email ?: member.uid // Use name, fallback to email, then uid
@@ -153,13 +180,17 @@ fun NewGroupScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientBrush)
+                .background(
+                    brush = if (isDark) Brush.linearGradient(
+                        colors = listOf(darkBackground, darkBackground) // Solid dark background
+                    ) else lightGradientBrush
+                )
                 .padding(padding)
                 .padding(24.dp)
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // Top Row with Back & Delete/Leave
+            // Top Row with Back, Theme Toggle & Delete/Leave
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,7 +200,7 @@ fun NewGroupScreen(
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = accentColor)
                 }
 
-                if (group?.createdBy == currentUserEmail) {
+                if (group?.createdByUid == currentUserId) { // Changed from createdBy to createdByUid
                     TextButton(onClick = { showDeleteDialog = true }) {
                         Icon(Icons.Filled.ExitToApp, contentDescription = "Delete", tint = Color.Red)
                     }
@@ -180,13 +211,16 @@ fun NewGroupScreen(
                 }
             }
 
+
             Spacer(Modifier.height(16.dp))
 
             // Group Header
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDark) darkCard else Color(0xFFE3F2FD)
+                ),
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Row(
@@ -197,13 +231,16 @@ fun NewGroupScreen(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF1976D2).copy(alpha = 0.15f)),
+                            .background(
+                                if (isDark) lightPrimaryColor.copy(alpha = 0.3f)
+                                else Color(0xFF1976D2).copy(alpha = 0.15f)
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.People,
                             contentDescription = "Group",
-                            tint = Color(0xFF1976D2),
+                            tint = if (isDark) darkText else Color(0xFF1976D2),
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -215,24 +252,26 @@ fun NewGroupScreen(
                             group?.name ?: "Loading...",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                                color = if (isDark) darkText else Color.Black
                             )
                         )
 
                         Text(
                             text = "Type: ${group?.type ?: "..."}",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = if (isDark) darkSecondaryText else Color.DarkGray
+                            )
                         )
 
                         Text(
                             text = "Created by: ${group?.createdBy ?: "..."}",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = if (isDark) darkSecondaryText else Color.Gray
+                            )
                         )
                     }
                 }
             }
-
-
 
             Spacer(Modifier.height(20.dp))
 
@@ -240,7 +279,12 @@ fun NewGroupScreen(
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf("Settle up", "Balance", "Total", "Members").forEach { tab ->
                     item {
-                        GroupChip(tab, selectedTab == tab) { selectedTab = tab }
+                        GroupChip(
+                            text = tab,
+                            isSelected = selectedTab == tab,
+                            onClick = { selectedTab = tab },
+                            isDark = isDark
+                        )
                     }
                 }
             }
@@ -253,7 +297,9 @@ fun NewGroupScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(Color.White),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isDark) darkCard else Color.White
+                        ),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Column(
@@ -266,16 +312,20 @@ fun NewGroupScreen(
                                 "Members",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
-                                color = Color.Black
+                                color = if (isDark) darkText else Color.Black
                             )
 
                             members.forEachIndexed { index, m ->
                                 MemberRow(
-                                    name = m.name ?: m.email ?: m.uid, // Show name, fallback to email, then uid
-                                    isPending = false
+                                    name = m.name ?: m.email ?: m.uid,
+                                    isPending = false,
+                                    isDark = isDark
                                 )
                                 if (index != members.lastIndex) {
-                                    Divider(thickness = 0.5.dp, color = Color.LightGray)
+                                    Divider(
+                                        thickness = 0.5.dp,
+                                        color = if (isDark) darkSecondaryText else Color.LightGray
+                                    )
                                 }
                             }
 
@@ -285,20 +335,21 @@ fun NewGroupScreen(
                                     "Pending Invites",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
-                                    color = Color.Gray
+                                    color = if (isDark) darkSecondaryText else Color.Gray
                                 )
 
                                 pendingInvites.forEach { m ->
                                     MemberRow(
-                                        name = m.name ?: m.email ?: m.uid, // Show name, fallback to email, then uid
-                                        isPending = true
+                                        name = m.name ?: m.email ?: m.uid,
+                                        isPending = true,
+                                        isDark = isDark
                                     )
                                 }
                             }
                         }
                     }
 
-                    if (group?.createdBy == currentUserEmail) {
+                    if (group?.createdByUid == currentUserId) { // Changed from createdBy to createdByUid
                         Spacer(Modifier.height(24.dp))
                         Box(
                             modifier = Modifier.fillMaxWidth(),
@@ -326,7 +377,9 @@ fun NewGroupScreen(
                                 .fillMaxWidth()
                                 .padding(8.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(Color(0xFFE8F5E9)), // light green background
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isDark) darkCard else Color(0xFFE8F5E9)
+                            ),
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
                             Column(
@@ -345,11 +398,11 @@ fun NewGroupScreen(
                                 Text(
                                     text = "You are all settled up! 🎉",
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF388E3C)
+                                    color = if (isDark) darkText else Color(0xFF388E3C)
                                 )
                                 Text(
                                     text = "No pending settlements left.",
-                                    color = Color.Gray,
+                                    color = if (isDark) darkSecondaryText else Color.Gray,
                                     fontSize = 13.sp
                                 )
                             }
@@ -359,11 +412,17 @@ fun NewGroupScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(Color.White),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isDark) darkCard else Color.White
+                            ),
                             elevation = CardDefaults.cardElevation(4.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Your pending settlements:", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Your pending settlements:",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isDark) darkText else Color.Black
+                                )
 
                                 mySettlements.forEach { settlement ->
                                     val toName = members.find { it.uid == settlement.to }?.name ?:
@@ -380,7 +439,11 @@ fun NewGroupScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Pay to $toName", fontWeight = FontWeight.Bold)
+                                            Text(
+                                                "Pay to $toName",
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isDark) darkText else Color.Black
+                                            )
 
                                             // Show both amounts
                                             if (modifiedAmount != originalAmount) {
@@ -390,11 +453,14 @@ fun NewGroupScreen(
                                                 )
                                                 Text(
                                                     "Balance: ₹${"%.2f".format(balance)}",
-                                                    color = Color.Gray,
+                                                    color = if (isDark) darkSecondaryText else Color.Gray,
                                                     fontSize = 12.sp
                                                 )
                                             } else {
-                                                Text("₹${"%.2f".format(originalAmount)}", color = Color.Red)
+                                                Text(
+                                                    "₹${"%.2f".format(originalAmount)}",
+                                                    color = Color.Red
+                                                )
                                             }
                                         }
 
@@ -407,7 +473,9 @@ fun NewGroupScreen(
                                                 showUpiDialog = true
                                             },
                                             shape = RoundedCornerShape(50),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color(0xFF2196F3)
+                                            ),
                                             enabled = modifiedAmount > 0
                                         ) {
                                             Text("Pay", color = Color.White)
@@ -438,52 +506,104 @@ fun NewGroupScreen(
                             "Balances",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 18.sp,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
+                            color = if (isDark) darkText else Color.Black
                         )
 
-                        members.forEach { member ->
+                        val hasBalances = members.any { member ->
                             val uid = member.uid
-                            val displayName = member.name ?: member.email ?: member.uid
+                            netSettlements.any { it.from == uid || it.to == uid }
+                        }
 
-                            val owes = netSettlements.filter { it.from == uid }
-                            val lents = netSettlements.filter { it.to == uid }
-
-                            if (owes.isNotEmpty() || lents.isNotEmpty()) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(Color.White),
-                                    elevation = CardDefaults.cardElevation(3.dp),
-                                    border = BorderStroke(1.dp, Color.LightGray)
+                        if (!hasBalances) {
+                            // Empty state for Balance tab
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isDark) darkCard else Color.White
+                                ),
+                                elevation = CardDefaults.cardElevation(2.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(24.dp)
+                                        .fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        // Member header
-                                        Text(
-                                            displayName,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 16.sp,
-                                            color = Color(0xFF1565C0)
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "No balances",
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(
+                                        text = "All balances are settled!",
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) darkText else Color(0xFF388E3C)
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = "No one owes anyone in this group.",
+                                        color = if (isDark) darkSecondaryText else Color.Gray,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            members.forEach { member ->
+                                val uid = member.uid
+                                val displayName = member.name ?: member.email ?: member.uid
+
+                                val owes = netSettlements.filter { it.from == uid }
+                                val lents = netSettlements.filter { it.to == uid }
+
+                                if (owes.isNotEmpty() || lents.isNotEmpty()) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (isDark) darkCard else Color.White
+                                        ),
+                                        elevation = CardDefaults.cardElevation(3.dp),
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (isDark) darkSecondaryText else Color.LightGray
                                         )
-                                        Spacer(Modifier.height(8.dp))
-
-                                        // Show owes
-                                        owes.forEach { settlement ->
-                                            val toName = getMemberDisplayName(settlement.to)
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            // Member header
                                             Text(
-                                                "• Owes to $toName: ₹${"%.2f".format(settlement.amount)}",
-                                                color = Color(0xFFD32F2F),
-                                                fontSize = 14.sp
+                                                displayName,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = if (isDark) darkText else Color(0xFF1565C0)
                                             )
-                                        }
+                                            Spacer(Modifier.height(8.dp))
 
-                                        // Show lents
-                                        lents.forEach { settlement ->
-                                            val fromName = getMemberDisplayName(settlement.from)
-                                            Text(
-                                                "• Lent from $fromName: ₹${"%.2f".format(settlement.amount)}",
-                                                color = Color(0xFF2E7D32),
-                                                fontSize = 14.sp
-                                            )
+                                            // Show owes
+                                            owes.forEach { settlement ->
+                                                val toName = getMemberDisplayName(settlement.to)
+                                                Text(
+                                                    "• Owes to $toName: ₹${"%.2f".format(settlement.amount)}",
+                                                    color = Color(0xFFD32F2F),
+                                                    fontSize = 14.sp
+                                                )
+                                            }
+
+                                            // Show lents
+                                            lents.forEach { settlement ->
+                                                val fromName = getMemberDisplayName(settlement.from)
+                                                Text(
+                                                    "• Lent from $fromName: ₹${"%.2f".format(settlement.amount)}",
+                                                    color = Color(0xFF2E7D32),
+                                                    fontSize = 14.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -501,94 +621,148 @@ fun NewGroupScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (memberExpenses.isNotEmpty()) {
-                            Text("Spending Distribution", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            val yourShare = expenses
-                                .flatMap { expense ->
-                                    expense.splits.entries.filter { it.key == currentUserId }.map { it.value }
-                                }
-                                .sum()
-                                .toFloat()
-
-                            InteractivePieChart(
-                                data = memberExpenses,
-                                yourShare = yourShare,
-                                totalSpending = totalSpending.toFloat(),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(300.dp)
-                            )
-                        }
                         Text(
                             "Expense Summary",
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
+                            color = if (isDark) darkText else Color.Black
                         )
-                        expenses.forEach { expense ->
-                            val payer = members.find { it.uid == expense.paidBy }?.name ?:
-                            members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
 
+                        if (expenses.isEmpty()) {
+                            // Empty state for Total tab
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(Color.White),
-                                elevation = CardDefaults.cardElevation(2.dp),
-                                border = BorderStroke(1.dp, Color.LightGray)
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isDark) darkCard else Color.White
+                                ),
+                                elevation = CardDefaults.cardElevation(2.dp)
                             ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-
-                                    // 🔹 Date Row with Icon
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DateRange,
-                                            contentDescription = "Date",
-                                            tint = Color.Gray,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = formatDate(expense.createdAt), // ✅ Convert Long -> String
-                                            fontSize = 13.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
-
-                                    Spacer(Modifier.height(6.dp))
-
-                                    // 🔹 Expense Description
-                                    Text(
-                                        expense.description,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 15.sp
+                                Column(
+                                    modifier = Modifier
+                                        .padding(24.dp)
+                                        .fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Receipt,
+                                        contentDescription = "No expenses",
+                                        tint = if (isDark) darkSecondaryText else Color.Gray,
+                                        modifier = Modifier.size(40.dp)
                                     )
-
-                                    Spacer(Modifier.height(4.dp))
-
-                                    // 🔹 Amount
+                                    Spacer(Modifier.height(12.dp))
                                     Text(
-                                        "₹${"%.2f".format(expense.amount)}",
+                                        text = "No expenses yet",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF4CAF50)
+                                        color = if (isDark) darkText else Color(0xFF2196F3)
                                     )
-
-                                    Spacer(Modifier.height(2.dp))
-
-                                    // 🔹 Payer
+                                    Spacer(Modifier.height(4.dp))
                                     Text(
-                                        "Paid by $payer",
-                                        fontSize = 13.sp,
-                                        color = Color.Gray
+                                        text = "Add your first expense to see the summary here.",
+                                        color = if (isDark) darkSecondaryText else Color.Gray,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
+                        } else {
+                            if (memberExpenses.isNotEmpty()) {
+                                Text(
+                                    "Spending Distribution",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    color = if (isDark) darkText else Color.Black
+                                )
+                                val yourShare = expenses
+                                    .flatMap { expense ->
+                                        expense.splits.entries.filter { it.key == currentUserId }.map { it.value }
+                                    }
+                                    .sum()
+                                    .toFloat()
+
+                                InteractivePieChart(
+                                    data = memberExpenses,
+                                    yourShare = yourShare,
+                                    totalSpending = totalSpending.toFloat(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(300.dp),
+                                    isDark = isDark
+                                )
+                            }
+
+                            expenses.forEach { expense ->
+                                val payer = members.find { it.uid == expense.paidBy }?.name ?:
+                                members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isDark) darkCard else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(2.dp),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isDark) darkSecondaryText else Color.LightGray
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+
+                                        // 🔹 Date Row with Icon
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.DateRange,
+                                                contentDescription = "Date",
+                                                tint = if (isDark) darkSecondaryText else Color.Gray,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = formatDate(expense.createdAt),
+                                                fontSize = 13.sp,
+                                                color = if (isDark) darkSecondaryText else Color.Gray
+                                            )
+                                        }
+
+                                        Spacer(Modifier.height(6.dp))
+
+                                        // 🔹 Expense Description
+                                        Text(
+                                            expense.description,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 15.sp,
+                                            color = if (isDark) darkText else Color.Black
+                                        )
+
+                                        Spacer(Modifier.height(4.dp))
+
+                                        // 🔹 Amount
+                                        Text(
+                                            "₹${"%.2f".format(expense.amount)}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = Color(0xFF4CAF50)
+                                        )
+
+                                        Spacer(Modifier.height(2.dp))
+
+                                        // 🔹 Payer
+                                        Text(
+                                            "Paid by $payer",
+                                            fontSize = 13.sp,
+                                            color = if (isDark) darkSecondaryText else Color.Gray
+                                        )
+                                    }
+                                }
+                            }
                         }
-
                     }
-
                 }
             }
 
@@ -599,7 +773,9 @@ fun NewGroupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) lightPrimaryColor else lightAccentColor
+                ),
                 shape = RoundedCornerShape(50)
             ) {
                 Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color.White)
@@ -607,9 +783,9 @@ fun NewGroupScreen(
                 Text("Add expense", color = Color.White)
             }
         }
-// Add this dialog after the UPI dialog
 
-        if (showInviteDialog && group?.createdBy == currentUserEmail) {
+        // Add this dialog after the UPI dialog
+        if (showInviteDialog && group?.createdByUid == currentUserId) {
             AlertDialog(
                 onDismissRequest = { showInviteDialog = false },
                 properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -617,7 +793,8 @@ fun NewGroupScreen(
                     Text(
                         "Invite Friend to Group",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
+                        fontSize = 20.sp,
+                        color = if (isDark) darkText else Color.Black
                     )
                 },
                 text = {
@@ -631,7 +808,7 @@ fun NewGroupScreen(
                         Text(
                             "Select a friend to invite:",
                             fontSize = 16.sp,
-                            color = Color.Gray
+                            color = if (isDark) darkSecondaryText else Color.Gray
                         )
 
                         val eligibleFriends = friends.filter { friend ->
@@ -646,14 +823,15 @@ fun NewGroupScreen(
                                     .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("No eligible friends to invite", color = Color.Gray)
+                                Text("No eligible friends to invite", color = if (isDark) darkSecondaryText else Color.Gray)
                             }
                         } else {
                             eligibleFriends.forEach { friend ->
                                 FriendItem(
                                     friend = friend,
                                     isSelected = selectedFriend?.uid == friend.uid,
-                                    onClick = { selectedFriend = friend }
+                                    onClick = { selectedFriend = friend },
+                                    isDark = isDark
                                 )
                             }
                         }
@@ -677,22 +855,33 @@ fun NewGroupScreen(
                             showInviteDialog = false
                         }
                     ) {
-                        Text("Send Invite")
+                        Text("Send Invite", color = if (isDark) darkText else Color.Black)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showInviteDialog = false }) {
-                        Text("Cancel")
+                        Text("Cancel", color = if (isDark) darkSecondaryText else Color.Gray)
                     }
-                }
+                },
+                containerColor = if (isDark) darkCard else Color.White
             )
         }
 
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete Group?") },
-                text = { Text("This action cannot be undone. Are you sure you want to delete this group?") },
+                title = {
+                    Text(
+                        "Delete Group?",
+                        color = if (isDark) darkText else Color.Black
+                    )
+                },
+                text = {
+                    Text(
+                        "This action cannot be undone. Are you sure you want to delete this group?",
+                        color = if (isDark) darkSecondaryText else Color.Black
+                    )
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -701,7 +890,7 @@ fun NewGroupScreen(
                             // Log the group deletion activity
                             logActivity(
                                 type = ActivityTypes.GROUP_DELETED,
-                                description = "Deleted group: ${group?.name ?: "Loading..."}", // You'll need to pass group name
+                                description = "Deleted group: ${group?.name ?: "Loading..."}",
                                 relatedGroupId = groupId,
                                 userId = FirebaseAuth.getInstance().currentUser?.uid
                             )
@@ -715,16 +904,28 @@ fun NewGroupScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Cancel", color = Color.Gray)
+                        Text("Cancel", color = if (isDark) darkSecondaryText else Color.Gray)
                     }
-                }
+                },
+                containerColor = if (isDark) darkCard else Color.White
             )
         }
+
         if (showLeaveDialog) {
             AlertDialog(
                 onDismissRequest = { showLeaveDialog = false },
-                title = { Text("Leave Group?") },
-                text = { Text("Are you sure you want to leave this group?") },
+                title = {
+                    Text(
+                        "Leave Group?",
+                        color = if (isDark) darkText else Color.Black
+                    )
+                },
+                text = {
+                    Text(
+                        "Are you sure you want to leave this group?",
+                        color = if (isDark) darkSecondaryText else Color.Black
+                    )
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -733,7 +934,7 @@ fun NewGroupScreen(
                             // Log the group leave activity
                             logActivity(
                                 type = ActivityTypes.GROUP_LEFT,
-                                description = "Left group: ${group?.name ?: "Loading..."}", // You'll need to pass group name
+                                description = "Left group: ${group?.name ?: "Loading..."}",
                                 relatedGroupId = groupId,
                                 userId = FirebaseAuth.getInstance().currentUser?.uid
                             )
@@ -747,15 +948,14 @@ fun NewGroupScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showLeaveDialog = false }) {
-                        Text("Cancel", color = Color.Gray)
+                        Text("Cancel", color = if (isDark) darkSecondaryText else Color.Gray)
                     }
-                }
+                },
+                containerColor = if (isDark) darkCard else Color.White
             )
         }
-
-
-
     }
+
     if (showUpiDialog && selectedSettlement != null) {
         val settlement = selectedSettlement!!
         val toName = members.find { it.uid == settlement.to }?.name ?:
@@ -768,20 +968,20 @@ fun NewGroupScreen(
         AlertDialog(
             onDismissRequest = { showUpiDialog = false },
             shape = RoundedCornerShape(16.dp),
-            containerColor = Color(0xFFF5F5F5),
+            containerColor = if (isDark) darkCard else Color(0xFFF5F5F5),
             title = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         "Settle Up",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = Color(0xFF2196F3)
+                        color = if (isDark) darkText else Color(0xFF2196F3)
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "You owe ₹${"%.2f".format(originalAmount)} to $toName",
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = if (isDark) darkSecondaryText else Color.Gray
                     )
                     if (currentModifiedAmount != originalAmount) {
                         Text(
@@ -798,6 +998,8 @@ fun NewGroupScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Amount input field
+                    // For all OutlinedTextField components, use the correct color parameters:
+                    val onSurfaceColor = if (isDark) DarkOnSurface else Color.Black
                     OutlinedTextField(
                         value = amountToPay,
                         onValueChange = {
@@ -809,7 +1011,16 @@ fun NewGroupScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Enter amount to pay") }
+                        placeholder = { Text("Enter amount to pay") },
+                        // Correct color parameters:
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            unfocusedLabelColor = if (isDark) onSurfaceColor.copy(alpha = 0.7f) else Color.Gray,
+                            unfocusedBorderColor = if (isDark) onSurfaceColor.copy(alpha = 0.5f) else Color.Gray,
+                            focusedBorderColor = primaryColor,
+                            focusedLabelColor = primaryColor,
+                            cursorColor = primaryColor,
+                            containerColor = Color.Transparent
+                        )
                     )
 
                     // Validation message
@@ -825,7 +1036,7 @@ fun NewGroupScreen(
                     Text(
                         "Enter UPI ID:",
                         fontSize = 14.sp,
-                        color = Color.DarkGray
+                        color = if (isDark) darkSecondaryText else Color.DarkGray
                     )
 
                     OutlinedTextField(
@@ -833,7 +1044,15 @@ fun NewGroupScreen(
                         onValueChange = { upiIdInput = it },
                         label = { Text("UPI ID (e.g. user@upi)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            unfocusedLabelColor = if (isDark) onSurfaceColor.copy(alpha = 0.7f) else Color.Gray,
+                            unfocusedBorderColor = if (isDark) onSurfaceColor.copy(alpha = 0.5f) else Color.Gray,
+                            focusedBorderColor = primaryColor,
+                            focusedLabelColor = primaryColor,
+                            cursorColor = primaryColor,
+                            containerColor = Color.Transparent
+                        )
                     )
 
                     OutlinedTextField(
@@ -841,7 +1060,15 @@ fun NewGroupScreen(
                         onValueChange = { nameInput = it },
                         label = { Text("Receiver Name (optional)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            unfocusedLabelColor = if (isDark) onSurfaceColor.copy(alpha = 0.7f) else Color.Gray,
+                            unfocusedBorderColor = if (isDark) onSurfaceColor.copy(alpha = 0.5f) else Color.Gray,
+                            focusedBorderColor = primaryColor,
+                            focusedLabelColor = primaryColor,
+                            cursorColor = primaryColor,
+                            containerColor = Color.Transparent
+                        )
                     )
                 }
             },
@@ -931,38 +1158,146 @@ fun NewGroupScreen(
                 TextButton(
                     onClick = { showUpiDialog = false }
                 ) {
-                    Text("Cancel", color = Color.Gray)
+                    Text("Cancel", color = if (isDark) darkSecondaryText else Color.Gray)
                 }
             }
         )
     }
+
     if (message.isNotEmpty()) {
         LaunchedEffect(message) { Log.d("UI", "Message: $message") }
     }
 }
 
-
+// Update the GroupChip composable to support dark mode
 @Composable
-fun GroupChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
+fun GroupChip(text: String, isSelected: Boolean, onClick: () -> Unit, isDark: Boolean) {
     Surface(
         shape = RoundedCornerShape(50),
         color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        border = BorderStroke(1.dp, Color.Gray),
+        border = BorderStroke(1.dp, if (isDark) Color.White else Color.Gray),
         modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = if (isSelected) Color.White else Color.Black
+            color = if (isSelected) Color.White else if (isDark) Color.White else Color.Black
         )
     }
 }
+
+// Update the MemberRow composable to support dark mode
+@Composable
+fun MemberRow(name: String, isPending: Boolean, isDark: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Circle Avatar
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(if (isDark) Color(0xFF37474F) else Color.LightGray, shape = CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = name.firstOrNull()?.uppercase() ?: "?",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = if (isDark) Color.White else Color.White
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = name,
+                fontSize = 14.sp,
+                color = if (isPending) Color.Gray else if (isDark) Color.White else Color.Black,
+                fontStyle = if (isPending) FontStyle.Italic else FontStyle.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (isPending) {
+                Text(
+                    text = "Pending",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+// Update the FriendItem composable to support dark mode
+@Composable
+fun FriendItem(friend: Friend, isSelected: Boolean, onClick: () -> Unit, isDark: Boolean) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                (if (isDark) Color(0xFF37474F) else Color(0xFFE3F2FD))
+            else
+                (if (isDark) darkCard else Color.White)
+        ),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(if (isDark) Color(0xFF37474F) else Color(0xFF90CAF9), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = friend.name?.firstOrNull()?.uppercase() ?:
+                    friend.email.firstOrNull()?.uppercase() ?: "?", // Use name first
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    friend.name ?: friend.email,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = if (isDark) darkText else Color.Black
+                ) // Show name first
+                if (friend.name != null && friend.email != null) {
+                    Text(
+                        friend.email,
+                        fontSize = 12.sp,
+                        color = if (isDark) darkSecondaryText else Color.Gray
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Update the InteractivePieChart composable to support dark mode
 @Composable
 fun InteractivePieChart(
     data: Map<String, Float>,   // member name/email -> amount
     yourShare: Float,           // Your share of the total spending
     totalSpending: Float,       // Total group spending
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDark: Boolean = false
 ) {
     val total = data.values.sum()
     var startAngle = 0f
@@ -981,7 +1316,7 @@ fun InteractivePieChart(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
-            colors= CardDefaults.cardColors(Color.White),
+            colors= CardDefaults.cardColors(if (isDark) Color(0xFF1E1E1E) else Color.White),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(
@@ -991,7 +1326,7 @@ fun InteractivePieChart(
                     "Total Group Spending: ₹${"%.2f".format(totalSpending)}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color(0xFF2196F3)
+                    color = if (isDark) darkText else Color(0xFF2196F3)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -1004,7 +1339,7 @@ fun InteractivePieChart(
                     Text(
                         "Your Percentage: ${"%.1f".format((yourShare / totalSpending) * 100)}%",
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = if (isDark) darkSecondaryText else Color.Gray
                     )
                 }
             }
@@ -1062,7 +1397,7 @@ fun InteractivePieChart(
 
                 // Draw a white circle in the center to create a donut chart effect
                 drawCircle(
-                    color = Color.White,
+                    color = if (isDark) darkCard else Color.White,
                     radius = size.minDimension / 4,
                     center = center
                 )
@@ -1075,7 +1410,7 @@ fun InteractivePieChart(
                         center.y - 10,
                         android.graphics.Paint().apply {
                             textSize = 24f
-                            color = android.graphics.Color.BLACK
+                            color = if (isDark) android.graphics.Color.WHITE else android.graphics.Color.BLACK
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
                     )
@@ -1085,7 +1420,7 @@ fun InteractivePieChart(
                         center.y + 20,
                         android.graphics.Paint().apply {
                             textSize = 14f
-                            color = android.graphics.Color.GRAY
+                            color = if (isDark) android.graphics.Color.LTGRAY else android.graphics.Color.GRAY
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
                     )
@@ -1099,7 +1434,8 @@ fun InteractivePieChart(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                elevation = CardDefaults.cardElevation(2.dp)
+                elevation = CardDefaults.cardElevation(2.dp),
+                colors = CardDefaults.cardColors(if (isDark) darkCard else Color.White)
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -1108,7 +1444,7 @@ fun InteractivePieChart(
                     Text(
                         "Paid by: $label",
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = if (isDark) darkText else Color.Black
                     )
                     Text(
                         "Amount: ₹${"%.2f".format(selectedAmount)}",
@@ -1116,7 +1452,7 @@ fun InteractivePieChart(
                     )
                     Text(
                         "Share: ${"%.1f".format(selectedPercentage)}%",
-                        color = Color.Gray,
+                        color = if (isDark) darkSecondaryText else Color.Gray,
                         fontSize = 12.sp
                     )
                 }
@@ -1126,7 +1462,11 @@ fun InteractivePieChart(
         // Legend
         if (data.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Legend:", fontWeight = FontWeight.SemiBold)
+            Text(
+                "Legend:",
+                fontWeight = FontWeight.SemiBold,
+                color = if (isDark) darkText else Color.Black
+            )
             Spacer(modifier = Modifier.height(8.dp))
             LazyColumn(
                 modifier = Modifier
@@ -1158,106 +1498,16 @@ fun InteractivePieChart(
                             modifier = Modifier.weight(1f),
                             fontSize = 12.sp,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (isDark) darkText else Color.Black
                         )
                         Text(
                             text = "₹${"%.2f".format(amount)}",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = if (isDark) darkText else Color.Black
                         )
                     }
-                }
-            }
-        }
-    }
-}
-@Composable
-fun MemberRow(name: String, isPending: Boolean) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // Circle Avatar
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(Color.LightGray, shape = CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = name.firstOrNull()?.uppercase() ?: "?",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.White
-            )
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = name,
-                fontSize = 14.sp,
-                color = if (isPending) Color.Gray else Color.Black,
-                fontStyle = if (isPending) FontStyle.Italic else FontStyle.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (isPending) {
-                Text(
-                    text = "Pending",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-    }
-}
-@Composable
-fun FriendItem(friend: Friend, isSelected: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFE3F2FD) else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFF90CAF9), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = friend.name?.firstOrNull()?.uppercase() ?:
-                    friend.email.firstOrNull()?.uppercase() ?: "?", // Use name first
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column {
-                Text(friend.name ?: friend.email, fontWeight = FontWeight.Medium, fontSize = 14.sp) // Show name first
-                if (friend.name != null && friend.email != null) {
-                    Text(
-                        friend.email,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
                 }
             }
         }

@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
-
+import androidx.compose.foundation.isSystemInDarkTheme
 
 
 import androidx.compose.ui.platform.LocalContext
@@ -38,24 +38,63 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Brush
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.data.DarkModeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import darkBackground
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewModel = viewModel()) {
-    val cardColor = MaterialTheme.colorScheme.surface
+fun ProfileScreen(navController: NavController, viewModel: LoginScreenViewModel = viewModel()) {
+    // Dark mode state
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+
+    // Dark mode colors
+    val darkBackground = Color(0xFF121212)
+    val darkCard = Color(0xFF1E1E1E)
+    val darkText = Color(0xFFFFFFFF)
+    val darkSecondaryText = Color(0xFFB3B3B3)
+
+
+    val lightPrimaryColor = Color(0xFF2196F3)
+    val lightGradientBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFE6F2FF),
+            Color(0xFFCCE5FF),
+            Color(0xFFB3DAFF)
+        )
+    )
+
+    val darkGradientBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF1A1A1A),
+            Color(0xFF2D2D2D),
+            Color(0xFF404040)
+        )
+    )
+
+    val cardColor = if (isDark) darkCard else MaterialTheme.colorScheme.surface
     val user by viewModel.user.observeAsState()
 
     LaunchedEffect(Unit) {
@@ -65,30 +104,76 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(
+                containerColor = if (isDark) darkCard else Color.White
+            ) {
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("Group")},
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                    label = { Text("Groups") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.Group,
+                            contentDescription = "Groups",
+                            tint = if (isDark) darkText else Color.Black
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Groups",
+                            color = if (isDark) darkText else Color.Black
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = {navController.navigate("friends") },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                    label = { Text("Friends") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Friends",
+                            tint = if (isDark) darkText else Color.Black
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Friends",
+                            color = if (isDark) darkText else Color.Black
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = {navController.navigate("history") },
-                    icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("History") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.List,
+                            contentDescription = "Activity",
+                            tint = if (isDark) darkText else Color.Black
+                        )
+                    },
+                    label = {
+                        Text(
+                            "History",
+                            color = if (isDark) darkText else Color.Black
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = true,
                     onClick = {  },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = "Account",
+                            tint = if (isDark) darkText else Color.Black
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Account",
+                            color = if (isDark) darkText else Color.Black
+                        )
+                    }
                 )
             }
         }
@@ -98,17 +183,16 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFE6F2FF),
-                            Color(0xFFCCE5FF),
-                            Color(0xFFB3DAFF)
-                        )
-                    )
+                    brush = if (isDark) Brush.linearGradient(
+                        colors = listOf(darkBackground, darkBackground) // Solid dark background
+                    ) else lightGradientBrush
                 )
         ) {
             item {
+
+
                 Spacer(modifier = Modifier.height(24.dp))
+
                 // Profile Image + Name
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -118,13 +202,13 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                         modifier = Modifier
                             .size(90.dp)
                             .clip(CircleShape)
-                            .background(Color.LightGray),
+                            .background(if (isDark) darkSecondaryText else Color.LightGray),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Profile",
-                            tint = Color.DarkGray,
+                            tint = if (isDark) darkText else Color.DarkGray,
                             modifier = Modifier.size(60.dp)
                         )
                     }
@@ -133,7 +217,7 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                         text = "${user?.displayName}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color=Color(0xFF304674)
+                        color = if (isDark) darkText else Color(0xFF304674)
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -144,14 +228,32 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(12.dp)),
-                    border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, if (isDark) darkSecondaryText else Color.Gray.copy(alpha = 0.4f)),
                     colors = CardDefaults.cardColors(containerColor = cardColor)
                 ) {
-                    SettingsItem1(title = "Name", description = "${user?.displayName}") {navController.navigate("changeName")}
-                    Divider()
-                    SettingsItem1(title = "Phone Number", description = " ${user?.phone}") {navController.navigate("changephone")}
-                    Divider()
-                    SettingsItem1(title = "Email", description = "${user?.email}") { navController.navigate("updateEmail") }
+                    SettingsItem1(
+                        title = "Name",
+                        description = "${user?.displayName}",
+                        onClick = {navController.navigate("changeName")},
+                        isDark = isDark,
+                        darkText = darkText
+                    )
+                    Divider(color = if (isDark) darkSecondaryText else Color.Gray.copy(alpha = 0.4f))
+                    SettingsItem1(
+                        title = "Phone Number",
+                        description = " ${user?.phone}",
+                        onClick = {navController.navigate("changephone")},
+                        isDark = isDark,
+                        darkText = darkText
+                    )
+                    Divider(color = if (isDark) darkSecondaryText else Color.Gray.copy(alpha = 0.4f))
+                    SettingsItem1(
+                        title = "Email",
+                        description = "${user?.email}",
+                        onClick = { navController.navigate("updateEmail") },
+                        isDark = isDark,
+                        darkText = darkText
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -162,25 +264,39 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                     text = "Preferences",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = if (isDark) darkText else Color.Black
                 )
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(12.dp)),
-                    border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, if (isDark) darkSecondaryText else Color.Gray.copy(alpha = 0.4f)),
                     colors = CardDefaults.cardColors(containerColor = cardColor)
                 ) {
-                    SettingsItem(title = "Notifications", description = "") {}
-                    Divider()
-                    SettingsItem(title = "Dark Mode", description = "On") {navController.navigate("darkMode")}
+                    SettingsItem(
+                        title = "Notifications",
+                        description = "",
+                        onClick = {},
+                        isDark = isDark,
+                        darkText = darkText,
+                        darkSecondaryText = darkSecondaryText
+                    )
+                    Divider(color = if (isDark) darkSecondaryText else Color.Gray.copy(alpha = 0.4f))
+                    SettingsItem(
+                        title = "Dark Mode",
+                        description = "",
+                        onClick = { navController.navigate("darkMode") },
+                        isDark = isDark,
+                        darkText = darkText,
+                        darkSecondaryText = darkSecondaryText
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // --- Logout ---
-
                 Text(
                     text = "Logout",
                     color = Color.Red,
@@ -202,12 +318,10 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                 Text(
                     text = "Keep your expenses clear and your groups stress-free.",
                     fontSize = 13.sp,
-                    color = Color.Black,
+                    color = if (isDark) darkSecondaryText else Color.Black,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-
 
                 Spacer(modifier = Modifier.height(80.dp))
             }
@@ -216,7 +330,14 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
 }
 
 @Composable
-fun SettingsItem(title: String, description: String, onClick: () -> Unit) {
+fun SettingsItem(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    isDark: Boolean = false,
+    darkText: Color = Color.White,
+    darkSecondaryText: Color = Color(0xFFB3B3B3)
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -225,23 +346,36 @@ fun SettingsItem(title: String, description: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 18.sp, color=Color(0xFF304674))
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                color = if (isDark) darkText else Color(0xFF304674)
+            )
             if (description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = description, fontSize = 13.sp, color = Color.Gray,
+                Text(
+                    text = description,
+                    fontSize = 13.sp,
+                    color = if (isDark) darkSecondaryText else Color.Gray
                 )
             }
         }
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = null,
-            tint = Color.Gray
+            tint = if (isDark) darkSecondaryText else Color.Gray
         )
     }
 }
 
 @Composable
-fun SettingsItem1(title: String, description: String, onClick: () -> Unit) {
+fun SettingsItem1(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    isDark: Boolean = false,
+    darkText: Color = Color.White
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,14 +384,22 @@ fun SettingsItem1(title: String, description: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontSize = 16.sp, color=Color(0xFF304674))
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                color = if (isDark) darkText else Color(0xFF304674)
+            )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = description, fontSize = 16.sp,)
+            Text(
+                text = description,
+                fontSize = 16.sp,
+                color = if (isDark) darkText else Color.Black
+            )
         }
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = null,
-            tint = Color.Gray
+            tint = if (isDark) darkText else Color.Gray
         )
     }
 }
