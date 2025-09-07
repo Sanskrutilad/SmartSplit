@@ -3,6 +3,7 @@ package com.example.smartsplit.screens.Homescreen
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,11 +31,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
-import kotlinx.coroutines.coroutineScope
+import com.example.smartsplit.data.DarkModeViewModel
+import com.example.smartsplit.screens.Friends.DarkOnSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -51,6 +54,48 @@ fun GroupSectionScreen(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
+
+    // Dark mode state (you can replace this with your app's theme state)
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+    // Dark mode colors
+    val darkBackground = Color(0xFF121212)
+    val darkSurface = Color(0xFF1E1E1E)
+    val darkText = Color(0xFFFFFFFF)
+    val darkSecondaryText = Color(0xFFB0B0B0)
+    val darkPrimary = Color(0xFFBB86FC)
+    val darkSecondary = Color(0xFF03DAC6)
+    val darkCard = Color(0xFF2D2D2D)
+    val darkFieldBorder = Color.White
+    val darkButtonBg = Color.White
+    val darkButtonText = Color.Black
+
+    // Light mode colors
+    val lightPrimary = Color(0xFF0077CC)
+    val lightBackground = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFE6F2FF),
+            Color(0xFFCCE5FF)
+        )
+    )
+    val lightCard = Color.White
+    val lightText = Color(0xFF222222)
+    val lightSecondaryText = Color.Gray
+
+    // Current theme colors
+    val primaryColor = if (isDark) Color.White else lightPrimary
+    val backgroundColor = if (isDark) darkBackground else lightBackground
+    val cardColor = if (isDark) darkCard else lightCard
+    val textColor = if (isDark) darkText else lightText
+    val secondaryTextColor = if (isDark) darkSecondaryText else lightSecondaryText
+    val navBarColor = if (isDark) darkSurface else Color.White
+    val fabColor = if (isDark) darkPrimary else lightPrimary
 
     LaunchedEffect(Unit) {
         viewModel.fetchMyGroups()
@@ -75,7 +120,11 @@ fun GroupSectionScreen(
                         searchQuery = ""
                         focusManager.clearFocus()
                     },
-                    focusRequester = focusRequester
+                    focusRequester = focusRequester,
+                    isDark = isDark,
+                    textColor = textColor,
+                    primaryColor = primaryColor,
+                    fieldBorderColor = if (isDark) darkFieldBorder else primaryColor
                 )
             } else {
                 TopAppBar(
@@ -84,7 +133,7 @@ fun GroupSectionScreen(
                             "SmartSplit",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0077CC)
+                                color = primaryColor
                             )
                         )
                     },
@@ -92,28 +141,28 @@ fun GroupSectionScreen(
                         IconButton(onClick = {
                             isSearching = true
                             coroutineScope.launch {
-                                delay(100) // Small delay to ensure the search bar is rendered
+                                delay(100)
                                 focusRequester.requestFocus()
                             }
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Search,
                                 contentDescription = "Search",
-                                tint = Color(0xFF0077CC)
+                                tint = primaryColor
                             )
                         }
                         IconButton(onClick = { navController.navigate("creategroup") }) {
                             Icon(
                                 imageVector = Icons.Filled.Group,
                                 contentDescription = "addgroup",
-                                tint = Color(0xFF0077CC)
+                                tint = primaryColor
                             )
                         }
                         IconButton(onClick = { navController.navigate("notification") }) {
                             Icon(
                                 imageVector = Icons.Filled.Notifications,
                                 contentDescription = "addgroup",
-                                tint = Color(0xFF0077CC)
+                                tint = primaryColor
                             )
                         }
                     },
@@ -124,43 +173,87 @@ fun GroupSectionScreen(
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = navBarColor) {
                 NavigationBarItem(
                     selected = true,
                     onClick = { },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups")},
-                    label = { Text("Groups") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.Group,
+                            contentDescription = "Groups",
+                            tint = if (isDark) darkText else primaryColor
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Groups",
+                            color = if (isDark) darkText else primaryColor
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = {navController.navigate("friends") },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                    label = { Text("Friends") }
+                    onClick = { navController.navigate("friends") },
+                    icon = {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Friends",
+                            tint = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Friends",
+                            color = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("history") },
-                    icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("History") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.List,
+                            contentDescription = "Activity",
+                            tint = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    },
+                    label = {
+                        Text(
+                            "History",
+                            color = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("profile") },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account") }
+                    icon = {
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = "Account",
+                            tint = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Account",
+                            color = if (isDark) darkSecondaryText else Color.Gray
+                        )
+                    }
                 )
             }
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("addexpense") },
-                containerColor = Color(0xFF0077CC),
+                containerColor = Color.White,
                 shape = RoundedCornerShape(50)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add Expense",
-                    tint = Color.White
+                    tint = if (isDark) darkButtonText else Color.White
                 )
             }
         }
@@ -170,13 +263,17 @@ fun GroupSectionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFE6F2FF),
-                                Color(0xFFCCE5FF)
-                            )
-                        )
+                    .then(
+                        if (isDark) {
+                            Modifier.background(darkBackground)
+                        } else {
+                            Modifier.background(brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFFE6F2FF),
+                                    Color(0xFFCCE5FF)
+                                )
+                            ))
+                        }
                     )
                     .padding(innerPadding)
                     .padding(24.dp),
@@ -187,13 +284,13 @@ fun GroupSectionScreen(
                     text = "No groups found",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF004C99)
+                    color = textColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "No groups match your search for \"$searchQuery\"",
                     fontSize = 16.sp,
-                    color = Color.Gray,
+                    color = secondaryTextColor,
                     modifier = Modifier.padding(horizontal = 24.dp),
                     lineHeight = 20.sp
                 )
@@ -203,13 +300,17 @@ fun GroupSectionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFE6F2FF),
-                                Color(0xFFCCE5FF)
-                            )
-                        )
+                    .then(
+                        if (isDark) {
+                            Modifier.background(darkBackground)
+                        } else {
+                            Modifier.background(brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFFE6F2FF),
+                                    Color(0xFFCCE5FF)
+                                )
+                            ))
+                        }
                     )
                     .padding(innerPadding)
                     .padding(24.dp),
@@ -220,13 +321,13 @@ fun GroupSectionScreen(
                     text = "No groups yet",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF004C99)
+                    color = textColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Create your first group to split expenses with friends!",
                     fontSize = 16.sp,
-                    color = Color.Gray,
+                    color = secondaryTextColor,
                     modifier = Modifier.padding(horizontal = 24.dp),
                     lineHeight = 20.sp
                 )
@@ -234,8 +335,8 @@ fun GroupSectionScreen(
                 Button(
                     onClick = { navController.navigate("creategroup") },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0077CC),
-                        contentColor = Color.White
+                        containerColor = primaryColor,
+                        contentColor = if (isDark) darkButtonText else Color.White
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(0.8f)
@@ -244,20 +345,20 @@ fun GroupSectionScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
-                    onClick = { },
+                    onClick = { navController.navigate("addFriend")},
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(0.8f),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF0077CC)
+                        contentColor = primaryColor
                     )
                 ) {
-                    Text(text = "Join Group with Code", fontSize = 16.sp)
+                    Text(text = "Invite Friends", fontSize = 16.sp)
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "💡 Tip: Use groups to manage trips, events, and shared expenses.",
                     fontSize = 14.sp,
-                    color = Color.DarkGray,
+                    color = secondaryTextColor,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
@@ -265,21 +366,33 @@ fun GroupSectionScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFE6F2FF),
-                                Color(0xFFCCE5FF)
-                            )
-                        )
+                    .then(
+                        if (isDark) {
+                            Modifier.background(darkBackground)
+                        } else {
+                            Modifier.background(brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFFE6F2FF),
+                                    Color(0xFFCCE5FF)
+                                )
+                            ))
+                        }
                     )
                     .padding(innerPadding)
                     .padding(8.dp)
             ) {
                 items(filteredGroups) { group ->
-                    GroupCard(group = group, onClick = {
-                        navController.navigate("GroupOverview/${group.id}")
-                    })
+                    GroupCard(
+                        group = group,
+                        onClick = {
+                            navController.navigate("GroupOverview/${group.id}")
+                        },
+                        isDark = isDark,
+                        cardColor = cardColor,
+                        textColor = textColor,
+                        secondaryTextColor = secondaryTextColor,
+                        primaryColor = primaryColor
+                    )
                 }
             }
         }
@@ -292,23 +405,36 @@ fun SearchTopBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onCloseSearch: () -> Unit,
-    focusRequester: FocusRequester
+    focusRequester: FocusRequester,
+    isDark: Boolean,
+    textColor: Color,
+    primaryColor: Color,
+    fieldBorderColor: Color
 ) {
     val focusManager = LocalFocusManager.current
-
+    val onSurfaceColor = if (isDark) DarkOnSurface else Color.Black
     TopAppBar(
         title = {
             TextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                placeholder = { Text("Find groups by name, admin, or type") },
+                placeholder = {
+                    Text(
+                        "Find groups by name, admin, or type",
+                        color = if (isDark) textColor.copy(alpha = 0.7f) else Color.Gray
+                    )
+                },
+                textStyle = LocalTextStyle.current.copy(color = onSurfaceColor),
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                colors = TextFieldDefaults.textFieldColors(
-                    containerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    unfocusedLabelColor = if (isDark) onSurfaceColor.copy(alpha = 0.7f) else Color.Gray,
+                    unfocusedBorderColor = if (isDark) onSurfaceColor.copy(alpha = 0.5f) else Color.Gray,
+                    focusedBorderColor = primaryColor,
+                    focusedLabelColor = primaryColor,
+                    cursorColor = primaryColor,
+                    containerColor = Color.Transparent
                 ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
@@ -325,7 +451,7 @@ fun SearchTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color(0xFF0077CC)
+                    tint = primaryColor
                 )
             }
         },
@@ -336,13 +462,22 @@ fun SearchTopBar(
 }
 
 @Composable
-fun GroupCard(group: Group, onClick: () -> Unit) {
+fun GroupCard(
+    group: Group,
+    onClick: () -> Unit,
+    isDark: Boolean,
+    cardColor: Color,
+    textColor: Color,
+    secondaryTextColor: Color,
+    primaryColor: Color
+) {
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -357,7 +492,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF0077CC).copy(alpha = 0.1f)),
+                    .background(primaryColor.copy(alpha = if (isDark) 0.2f else 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 val icon = when (group.type.lowercase()) {
@@ -371,7 +506,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 Icon(
                     imageVector = icon,
                     contentDescription = group.type,
-                    tint = Color(0xFF0077CC),
+                    tint = primaryColor,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -385,7 +520,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                     text = group.name,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF222222)
+                        color = textColor
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -394,14 +529,14 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                 Text(
                     text = group.type,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.Gray,
+                        color = secondaryTextColor,
                         fontWeight = FontWeight.Medium
                     )
                 )
                 Text(
                     text = "Admin : ${group.createdBy}",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.Gray,
+                        color = secondaryTextColor,
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -410,7 +545,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.ArrowForwardIos,
                 contentDescription = "Go to group",
-                tint = Color.Gray,
+                tint = secondaryTextColor,
                 modifier = Modifier.size(18.dp)
             )
         }

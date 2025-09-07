@@ -14,6 +14,7 @@ import com.example.smartsplit.screens.Friends.AddFriendScreen
 
 import com.example.smartsplit.screens.Friends.FriendsScreen
 import com.example.smartsplit.screens.Groups.AddExpenseScreen
+import com.example.smartsplit.screens.Groups.paytonanyone
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
 import com.example.smartsplit.screens.Loginscreen.LoginScreen
 import com.example.smartsplit.screens.Loginscreen.SignupScreen
@@ -89,6 +90,9 @@ fun AppNavigation() {
         }
         composable("addexpense") {
             AddExpenseScreen(navController = navController)
+        }
+        composable("paytonanyone") {
+            paytonanyone()
         }
     }
 }

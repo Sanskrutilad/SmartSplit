@@ -1,6 +1,6 @@
 package com.example.smartsplit.screens.Profile
 
-import accentColor
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.screens.Groups.accentColor
 
 
 @OptIn(ExperimentalMaterial3Api::class)

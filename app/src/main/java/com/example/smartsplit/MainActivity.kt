@@ -28,7 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.navigation.AppNavigation
-import com.example.smartsplit.screens.Component.DarkModeViewModel
 import com.example.smartsplit.ui.theme.SmartSplitTheme
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint

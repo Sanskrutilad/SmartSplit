@@ -94,7 +94,27 @@ class GroupViewModel : ViewModel() {
         val name: String,
         val memberCount: Int
     )
+    fun getUserNameFromUid1(uid: String, onResult: (String?) -> Unit) {
+        Log.d("GroupViewModel", "Fetching name for UID: $uid")
 
+        db.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val name = document.getString("display_name") // 👈 use display_name
+                    Log.d("GroupViewModel", "Fetched user doc: ${document.data}")
+                    Log.d("GroupViewModel", "Extracted display_name: $name")
+                    onResult(name)
+                } else {
+                    Log.w("GroupViewModel", "No user found for UID: $uid")
+                    onResult(null)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("GroupViewModel", "Error fetching user for UID: $uid", e)
+                onResult(null)
+            }
+    }
     private val _sharedGroupsWithFriend = MutableLiveData<List<SharedGroup>>(emptyList())
     val sharedGroupsWithFriend: LiveData<List<SharedGroup>> = _sharedGroupsWithFriend
 

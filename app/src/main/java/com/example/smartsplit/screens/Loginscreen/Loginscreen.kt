@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,8 +29,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.data.DarkModeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,8 +48,16 @@ fun LoginScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val isDark = true
 
+
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDark = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
     val primaryColor = Color(0xFF2196F3)
     val accentColor = primaryColor
     val gradientBrush = Brush.verticalGradient(

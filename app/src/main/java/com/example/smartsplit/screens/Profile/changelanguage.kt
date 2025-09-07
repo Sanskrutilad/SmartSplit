@@ -1,6 +1,5 @@
 package com.example.smartsplit.screens.Profile
 
-import accentColor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.smartsplit.screens.Groups.accentColor
 
 @Composable
 fun LanguageScreen(

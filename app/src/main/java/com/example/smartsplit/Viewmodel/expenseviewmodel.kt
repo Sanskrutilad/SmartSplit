@@ -4,8 +4,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.flow.StateFlow
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
@@ -20,6 +23,23 @@ data class Expense(
     val splitBy: String = "",
     val createdAt: Long = 0L,
     val splits: Map<String, Double> = emptyMap()
+)
+// Add these data classes
+data class FriendExpense(
+    val id: String = "",
+    val description: String = "",
+    val amount: Double = 0.0,
+    val paidBy: String = "",
+    val createdAt: Long = 0L,
+    val splits: Map<String, Double> = emptyMap(),
+    val friendId: String = "" // The other friend's UID
+)
+
+data class FriendBalance(
+    val friendId: String,
+    val friendName: String,
+    val totalBalance: Double, // Positive = they owe you, Negative = you owe them
+    val expenses: List<FriendExpense> = emptyList()
 )
 
 fun formatDate(timestamp: Long): String {
@@ -55,7 +75,176 @@ class ExpenseViewModel : ViewModel() {
     private val _friendExpenses = MutableLiveData<List<FriendExpense>>(emptyList())
     val friendExpenses: LiveData<List<FriendExpense>> = _friendExpenses
     // In ExpenseViewModel
+    private val _friendBalances = MutableLiveData<List<FriendBalance>>(emptyList())
+    val friendBalances: LiveData<List<FriendBalance>> = _friendBalances
 
+
+    fun addFriendExpense(
+        description: String,
+        amount: Double,
+        paidBy: String,
+        friendId: String,
+        splits: Map<String, Double>
+    ) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        // build participants array (all split keys + payer)
+        val participants = splits.keys.toMutableSet().apply { add(paidBy) }.toList()
+
+        val expense = hashMapOf(
+            "description" to description,
+            "amount" to amount,
+            "paidBy" to paidBy,
+            "friendId" to friendId,
+            "createdAt" to System.currentTimeMillis(),
+            "splits" to splits,
+            "participants" to participants  // ✅ new field
+        )
+
+        db.collection("friend_expenses")
+            .add(expense)
+            .addOnSuccessListener {
+                _message.value = "Friend expense added successfully!"
+                fetchFriendBalances(currentUserId)
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Error adding friend expense: ${e.message}"
+            }
+    }
+
+    fun fetchFriendBalances(currentUserId: String) {
+        println("DEBUG: Fetching friend expenses for user: $currentUserId")
+
+        db.collection("friend_expenses")
+            .whereArrayContains("participants", currentUserId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    println("DEBUG: Error fetching expenses: ${error.message}")
+                    return@addSnapshotListener
+                }
+
+                val expenses = snapshot?.documents?.mapNotNull {
+                    try {
+                        it.toObject(FriendExpense::class.java)
+                    } catch (e: Exception) {
+                        println("DEBUG: Error parsing FriendExpense: ${e.message}")
+                        null
+                    }
+                } ?: emptyList()
+
+                println("DEBUG: Found ${expenses.size} expenses")
+                expenses.forEach { expense ->
+                    println("DEBUG: Expense: ${expense.description}, paidBy: ${expense.paidBy}, splits: ${expense.splits}")
+                }
+
+                val rawBalances = calculateFriendBalances(currentUserId, expenses)
+
+                // ✅ Directly use Friend IDs (no name lookup)
+                _friendBalances.value = rawBalances.map { fb ->
+                    fb.copy(friendName = fb.friendId)  // just set friendName = id
+                }
+
+                println("DEBUG: Calculated ${_friendBalances.value?.size ?: 0} friend balances with IDs")
+                _friendBalances.value?.forEach {
+                    println("DEBUG: ${it.friendName} → ${it.totalBalance}")
+                }
+            }
+    }
+
+
+
+
+    private fun calculateFriendBalances(
+        currentUserId: String,
+        expenses: List<FriendExpense>
+    ): List<FriendBalance> {
+        val friendBalancesMap = mutableMapOf<String, Double>()
+
+        expenses.forEach { expense ->
+            val isPayer = expense.paidBy == currentUserId
+            val isInSplits = expense.splits.containsKey(currentUserId)
+
+            if (isPayer || isInSplits) {
+                expense.splits.forEach { (friendId, amount) ->
+                    if (friendId != currentUserId) {
+                        val balance = if (isPayer) {
+                            amount // you paid → friend owes you
+                        } else {
+                            -amount // friend paid → you owe them
+                        }
+                        friendBalancesMap[friendId] =
+                            (friendBalancesMap[friendId] ?: 0.0) + balance
+                    }
+                }
+            }
+        }
+
+        return friendBalancesMap.map { (friendId, balance) ->
+            FriendBalance(
+                friendId = friendId,
+                friendName = "Friend", // will be replaced later
+                totalBalance = balance
+            )
+        }
+    }
+
+
+    fun testFirestoreConnection() {
+        db.collection("friend_expenses")   // ✅ consistent collection name
+            .get()
+            .addOnSuccessListener {
+                println("DEBUG: Firestore connection successful, found ${it.size()} friend expenses")
+            }
+            .addOnFailureListener {
+                println("DEBUG: Firestore connection failed: ${it.message}")
+            }
+    }
+
+    fun debugFriendBalances() {
+        println("DEBUG: Current friend balances: ${_friendBalances.value.size}")
+        _friendBalances.value.forEach {
+            println("DEBUG: ${it.friendName} (${it.friendId}): ${it.totalBalance}")
+        }
+    }
+
+    // Helper function to round to 2 decimal places
+    private fun Double.roundToTwoDecimals(): Double {
+        return BigDecimal(this).setScale(2, RoundingMode.HALF_UP).toDouble()
+    }
+    private fun fetchFriendNames(balances: List<FriendBalance>, currentUserId: String) {
+        val updatedBalances = balances.toMutableList()
+        var completedCount = 0
+
+        if (balances.isEmpty()) {
+            _friendBalances.value = emptyList()
+            return
+        }
+
+        balances.forEachIndexed { index, balance ->
+            db.collection("users").document(balance.friendId).get()
+                .addOnSuccessListener { document ->
+                    val name = document.getString("name") ?:
+                    document.getString("email") ?:
+                    "Friend ${balance.friendId.take(8)}"
+                    updatedBalances[index] = balance.copy(friendName = name)
+                    completedCount++
+
+                    // Update when all names are fetched
+                    if (completedCount == balances.size) {
+                        _friendBalances.value = updatedBalances
+                    }
+                }
+                .addOnFailureListener {
+                    // Use a default name if fetch fails
+                    updatedBalances[index] = balance.copy(friendName = "Friend ${balance.friendId.take(8)}")
+                    completedCount++
+
+                    if (completedCount == balances.size) {
+                        _friendBalances.value = updatedBalances
+                    }
+                }
+        }
+    }
     fun markSettlementPartiallyPaid(
         settlement: Settlement,
         groupId: String,
@@ -378,8 +567,6 @@ class ExpenseViewModel : ViewModel() {
 
         return netSettlements
     }
-
-
 }
 
-// --- elsewhere, GroupMember remains the same as before ---
+

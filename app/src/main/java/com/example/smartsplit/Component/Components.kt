@@ -1,70 +1,86 @@
-package com.example.smartsplit.screens.Component
+package com.example.smartsplit.data
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.datastore.preferences.core.edit
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.asLiveData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 
-class DarkModeViewModel(application: Application) : AndroidViewModel(application) {
-    private val dataStore = SettingsDataStore(application)
 
-    private val _darkMode = MutableStateFlow(false)
-    val darkMode: StateFlow<Boolean> = _darkMode
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-    init {
-        dataStore.darkModeFlow
-            .onEach { _darkMode.value = it }
-            .launchIn(viewModelScope)
+@Singleton
+class DataStoreManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        private val DARK_MODE_KEY = stringPreferencesKey("dark_mode")
     }
 
-    fun toggleDarkMode() {
-        viewModelScope.launch {
-            dataStore.setDarkMode(!_darkMode.value)
+    val darkModeFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[DARK_MODE_KEY] ?: "Automatic"
+        }
+
+    suspend fun setDarkMode(option: String) {
+        context.dataStore.edit { preferences ->
+            preferences[DARK_MODE_KEY] = option
         }
     }
-    fun resetDarkModeToDefault() {
-        viewModelScope.launch {
-            dataStore.setDarkMode(false)
-        }
+
+    suspend fun getDarkMode(): String {
+        return context.dataStore.data.map { preferences ->
+            preferences[DARK_MODE_KEY] ?: "Automatic"
+        }.first()
     }
 }
 
 
-private val Context.dataStore by preferencesDataStore("settings")
+@HiltViewModel
+class DarkModeViewModel @Inject constructor(
+    private val dataStoreManager: DataStoreManager
+) : ViewModel() {
 
+    val darkModeFlow = dataStoreManager.darkModeFlow
+    val darkModeLiveData = darkModeFlow.asLiveData()
 
-object SettingsKeys {
-    val DARK_MODE = booleanPreferencesKey("dark_mode")
-    val LANGUAGE = stringPreferencesKey("language")
+    fun setDarkMode(option: String) {
+        viewModelScope.launch {
+            dataStoreManager.setDarkMode(option)
+        }
+    }
+
+    suspend fun getDarkMode(): String {
+        return dataStoreManager.getDarkMode()
+    }
 }
 
-class SettingsDataStore(private val context: Context) {
+@Composable
+fun isDarkModeEnabled(): Boolean {
+    val viewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by viewModel.darkModeLiveData.observeAsState("Automatic")
 
-    val darkModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[SettingsKeys.DARK_MODE] ?: false
-    }
-
-    suspend fun setDarkMode(enabled: Boolean) {
-        context.dataStore.edit { it[SettingsKeys.DARK_MODE] = enabled }
-    }
-
-    val languageFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[SettingsKeys.LANGUAGE] ?: "en"
-    }
-
-    suspend fun setLanguage(languageCode: String) {
-        context.dataStore.edit { it[SettingsKeys.LANGUAGE] = languageCode }
+    return when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
     }
 }

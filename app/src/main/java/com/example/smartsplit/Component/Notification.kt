@@ -1,6 +1,7 @@
 package com.example.smartsplit.Component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -41,12 +43,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.FriendRequest
 import com.example.smartsplit.Viewmodel.FriendsViewModel
 import com.example.smartsplit.Viewmodel.GroupInvite
 import com.example.smartsplit.Viewmodel.GroupViewModel
+import com.example.smartsplit.data.DarkModeViewModel
+import com.example.smartsplit.screens.Friends.DarkBackground
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,13 +59,40 @@ import com.google.firebase.auth.FirebaseAuth
 fun FriendRequestsScreen(
     navController: NavController,
     viewModel: FriendsViewModel = viewModel(),
-    groupViewModel: GroupViewModel = viewModel()
+    groupViewModel: GroupViewModel = viewModel(),
+    darkModeViewModel: DarkModeViewModel = hiltViewModel()
 ) {
-    val primaryColor = Color(0xFF2196F3)
-    val accentColor = Color(0xFF2196F3)
-    val gradientBrush = Brush.verticalGradient(
-        colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
-    )
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDarkMode = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
+    // Dark mode colors
+    val primaryColor = if (isDarkMode) Color(0xFFBB86FC) else Color(0xFF2196F3)
+    val accentColor = if (isDarkMode) Color.White else Color(0xFF2196F3)
+    val backgroundColor = if (isDarkMode) Color(0xFF121212) else Color.White
+    val surfaceColor = if (isDarkMode) Color(0xFF1E1E1E) else Color.White
+    val textColor = if (isDarkMode) Color.White else Color.Black
+    val secondaryTextColor = if (isDarkMode) Color(0xFFBBBBBB) else Color.Gray
+    val outlineColor = if (isDarkMode) Color(0xFF444444) else Color.Gray
+
+    val gradientBrush = if (isDarkMode) {
+        Brush.verticalGradient(
+            colors = listOf(
+                primaryColor.copy(alpha = 0.15f),
+                backgroundColor
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            colors = listOf(
+                primaryColor.copy(alpha = 0.15f),
+                Color.White
+            )
+        )
+    }
 
     val friendRequests by viewModel.friendRequests.collectAsState()
     val groupInvites by viewModel.groupInvites.collectAsState()
@@ -76,7 +108,13 @@ fun FriendRequestsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientBrush)
+                .then(
+                    if (isDarkMode) {
+                        Modifier.background(DarkBackground)
+                    } else {
+                        Modifier.background(gradientBrush)
+                    }
+                )
                 .padding(padding)
                 .padding(16.dp)
         ) {
@@ -88,7 +126,7 @@ fun FriendRequestsScreen(
                 Text(
                     "Requests & Invites",
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        color = accentColor,
+                        color = textColor,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -99,11 +137,14 @@ fun FriendRequestsScreen(
             // Friend Requests Section
             Text(
                 "Friend Requests",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             )
 
             if (friendRequests.isEmpty()) {
-                Text("No friend requests", color = Color.Gray)
+                Text("No friend requests", color = secondaryTextColor)
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -114,8 +155,12 @@ fun FriendRequestsScreen(
                             requestId = requestId,
                             request = request,
                             accentColor = accentColor,
+                            textColor = textColor,
+                            secondaryTextColor = secondaryTextColor,
+                            surfaceColor = surfaceColor,
                             onAccept = { viewModel.acceptRequest(requestId, request) },
-                            onReject = { viewModel.rejectRequest(requestId) }
+                            onReject = { viewModel.rejectRequest(requestId) },
+                            isDarkMode = isDarkMode
                         )
                     }
                 }
@@ -126,11 +171,14 @@ fun FriendRequestsScreen(
             // Group Invites Section
             Text(
                 "Group Invites",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             )
 
             if (groupInvites.isEmpty()) {
-                Text("No group invites", color = Color.Gray)
+                Text("No group invites", color = secondaryTextColor)
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -141,8 +189,12 @@ fun FriendRequestsScreen(
                             inviteId = inviteId,
                             invite = invite,
                             accentColor = accentColor,
+                            textColor = textColor,
+                            secondaryTextColor = secondaryTextColor,
+                            surfaceColor = surfaceColor,
                             onAccept = { viewModel.acceptGroupInvite(inviteId, invite) },
-                            onReject = { viewModel.rejectGroupInvite(inviteId) }
+                            onReject = { viewModel.rejectGroupInvite(inviteId) },
+                            isDarkMode = isDarkMode
                         )
                     }
                 }
@@ -156,12 +208,16 @@ fun RequestCard(
     requestId: String,
     request: FriendRequest,
     accentColor: Color,
+    textColor: Color,
+    secondaryTextColor: Color,
+    surfaceColor: Color,
     onAccept: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    isDarkMode: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors= CardDefaults.cardColors(Color.White),
+        colors = CardDefaults.cardColors(containerColor = surfaceColor),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
@@ -173,19 +229,32 @@ fun RequestCard(
                 color = accentColor
             )
             Spacer(Modifier.height(4.dp))
-            Text("From User: ${request.fromUserId}")
+            Text(
+                "From User: ${request.fromUserId}",
+                color = textColor
+            )
 
             Spacer(Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = onAccept,
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentColor,
+                        contentColor = if (isDarkMode) Color.Black else Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Accept", color = Color.White)
+                    Text("Accept")
                 }
-                OutlinedButton(onClick = onReject) {
-                    Text("Reject", color = Color.Red)
+                OutlinedButton(
+                    onClick = onReject,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.Red
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Reject")
                 }
             }
         }
@@ -197,12 +266,17 @@ fun GroupInviteCard(
     inviteId: String,
     invite: GroupInvite,
     accentColor: Color,
+    textColor: Color,
+    secondaryTextColor: Color,
+    surfaceColor: Color,
     onAccept: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    isDarkMode: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = surfaceColor),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
@@ -213,15 +287,31 @@ fun GroupInviteCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(invite.groupName, fontWeight = FontWeight.Bold)
-                Text("Invited by: ${invite.invitedBy}", color = Color.Gray, fontSize = 12.sp)
+                Text(
+                    invite.groupName,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+                Text(
+                    "Invited by: ${invite.invitedBy}",
+                    color = secondaryTextColor,
+                    fontSize = 12.sp
+                )
             }
             Row {
                 IconButton(onClick = onAccept) {
-                    Icon(Icons.Default.Check, contentDescription = "Accept", tint = accentColor)
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Accept",
+                        tint = accentColor
+                    )
                 }
                 IconButton(onClick = onReject) {
-                    Icon(Icons.Default.Close, contentDescription = "Reject", tint = Color.Red)
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Reject",
+                        tint = Color.Red
+                    )
                 }
             }
         }

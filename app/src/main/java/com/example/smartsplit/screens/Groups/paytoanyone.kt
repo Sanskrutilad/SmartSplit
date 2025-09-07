@@ -1,5 +1,7 @@
 package com.example.smartsplit.screens.Groups
 
+
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -45,18 +47,10 @@ import com.example.smartsplit.Viewmodel.logActivity
 import com.google.firebase.auth.FirebaseAuth
 import kotlin.math.abs
 
-val primaryColor = Color(0xFF2196F3)
-val accentColor = Color(0xFF2196F3)
-val gradientBrush = Brush.verticalGradient(
-    colors = listOf(
-        primaryColor.copy(alpha = 0.15f),
-        Color.White
-    )
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(
+fun paytonanyone(
     navController: NavController? = null,
     friendsViewModel: FriendsViewModel = viewModel(),
     groupViewModel: GroupViewModel = viewModel(),
@@ -71,6 +65,7 @@ fun AddExpenseScreen(
 
     var paidByUid by remember { mutableStateOf(currentUserId) }
     var paidByLabel by remember { mutableStateOf("You") }
+
 
     var selectedFriend by remember { mutableStateOf<Friend?>(null) }
     var selectedGroup by remember { mutableStateOf<Group?>(null) }
@@ -118,7 +113,7 @@ fun AddExpenseScreen(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Add expense",
+            text = "Pay to anyone",
             style = MaterialTheme.typography.headlineSmall.copy(
                 color = primaryColor,
                 fontWeight = FontWeight.Bold
@@ -129,7 +124,7 @@ fun AddExpenseScreen(
 
         // With who?
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("With you and:", color = Color.Black)
+            Text("Select friend", color = Color.Black)
             Spacer(Modifier.width(8.dp))
             AssistChip(
                 onClick = { showWithDialog = true },
@@ -184,58 +179,8 @@ fun AddExpenseScreen(
             )
         )
 
-        Spacer(Modifier.height(24.dp))
+        Text("Paid by: You", fontWeight = FontWeight.Bold, color = primaryColor)
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            AssistChip(
-                onClick = { showPaidByDialog = true },
-                label = { Text("Paid by: $paidByLabel") }
-            )
-            AssistChip(
-                onClick = { showSplitDialog = true },
-                label = { Text("Split: $splitBy") }
-            )
-        }
-
-        // Show split summary
-        if (showSaveBtn && (splitBy == "By shares" || splitBy == "By percentage")) {
-            Spacer(Modifier.height(16.dp))
-            val members = when {
-                selectedGroup != null -> groupMembers
-                selectedFriend != null -> listOf(
-                    GroupMember(uid = currentUserId, email = "You", accepted = true),
-                    GroupMember(uid = selectedFriend!!.uid, email = selectedFriend!!.email, accepted = true)
-                )
-                else -> emptyList()
-            }
-
-            val amt = amount.toDoubleOrNull() ?: 0.0
-            Column {
-                Text("Split Summary:", fontWeight = FontWeight.Bold, color = primaryColor)
-                Spacer(Modifier.height(8.dp))
-                members.forEach { member ->
-                    val share = when (splitBy) {
-                        "By percentage" -> {
-                            val percent = splitInputs[member.uid]?.toDoubleOrNull() ?: 0.0
-                            amt * percent / 100
-                        }
-                        "By shares" -> {
-                            val shareVal = splitInputs[member.uid]?.toDoubleOrNull() ?: 0.0
-                            val totalShares = members.sumOf { splitInputs[it.uid]?.toDoubleOrNull() ?: 0.0 }
-                            if (totalShares > 0) amt * shareVal / totalShares else 0.0
-                        }
-                        else -> 0.0
-                    }
-                    Text(
-                        "${if (member.uid == currentUserId) "You" else member.email}: ₹${"%.2f".format(share)}",
-                        color = Color.Gray
-                    )
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -318,7 +263,7 @@ fun AddExpenseScreen(
 
     // Friend or Group dialog
     if (showWithDialog) {
-        SelectFriendOrGroupScreen(
+        SelectFriendOrGroupScreen1(
             friends = friends,
             groups = groups,
             onFriendSelected = { friend ->
@@ -361,7 +306,7 @@ fun AddExpenseScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     paidByUid = member.uid
-                                    paidByLabel = if (member.uid == currentUserId) "You" else (member.name ?: "Friend")
+                                    paidByLabel = if (member.uid == currentUserId) "You" else (member.email ?: "Friend")
                                     showPaidByDialog = false
                                 }
                                 .padding(vertical = 4.dp),
@@ -376,7 +321,7 @@ fun AddExpenseScreen(
                             ) {
                                 Icon(Icons.Default.Person, contentDescription = null, tint = primaryColor)
                                 Spacer(Modifier.width(8.dp))
-                                Text(if (member.uid == currentUserId) "You" else (member.name ?: "Friend"))
+                                Text(if (member.uid == currentUserId) "You" else (member.email ?: "Friend"))
                             }
                         }
                     }
@@ -583,7 +528,7 @@ private fun calculateGroupSplits(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectFriendOrGroupScreen(
+fun SelectFriendOrGroupScreen1(
     friends: List<Friend>,
     groups: List<Group>,
     onFriendSelected: (Friend) -> Unit,
@@ -689,7 +634,7 @@ fun SelectFriendOrGroupScreen(
 
 
 @Composable
-fun SelectListItem(
+fun SelectListItem1(
     title: String,
     subtitle: String,
     icon: ImageVector,
@@ -722,6 +667,6 @@ fun SelectListItem(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun AddExpenseScreenPreview() {
-    AddExpenseScreen()
+fun AddExpenseScreenPreview1() {
+    paytonanyone()
 }

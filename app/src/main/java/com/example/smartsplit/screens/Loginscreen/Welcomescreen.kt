@@ -3,9 +3,12 @@ package com.example.smartsplit.screens.Loginscreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -15,8 +18,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.R
+import com.example.smartsplit.data.DarkModeViewModel
 
 @Composable
 fun Welcomscreen(
@@ -24,7 +29,15 @@ fun Welcomscreen(
 
 ) {
     val primaryColor = Color(0xFF2196F3)
-    val isDarkMode=false
+
+    val darkModeViewModel: DarkModeViewModel = hiltViewModel()
+    val darkModeOption by darkModeViewModel.darkModeLiveData.observeAsState("Automatic")
+    val isDarkMode = when (darkModeOption) {
+        "On" -> true
+        "Off" -> false
+        "Automatic" -> isSystemInDarkTheme()
+        else -> false
+    }
     // Light mode gradient
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(primaryColor.copy(alpha = 0.15f), Color.White)
