@@ -155,14 +155,6 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Connect your Bank Account to get paid back faster.\nPowered by bunq",
-                    fontSize = 13.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Preferences Title ---

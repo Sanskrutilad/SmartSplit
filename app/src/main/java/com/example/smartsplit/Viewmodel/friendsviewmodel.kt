@@ -242,7 +242,26 @@ class FriendsViewModel : ViewModel() {
         }
     }
 
+    // Add this to your FriendsViewModel class
+    fun getFriend(friendId: String): StateFlow<Friend?> {
+        val result = MutableStateFlow<Friend?>(null)
 
+        db.collection("users").document(friendId).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val email = document.getString("email") ?: ""
+                    val name = document.getString("name") ?: email
+                    result.value = Friend(uid = friendId, name = name, email = email)
+                } else {
+                    result.value = null
+                }
+            }
+            .addOnFailureListener {
+                result.value = null
+            }
+
+        return result
+    }
     fun rejectGroupInvite(inviteId: String) {
         db.collection("groupInvites").document(inviteId).delete()
     }

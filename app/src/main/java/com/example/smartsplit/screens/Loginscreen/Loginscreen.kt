@@ -45,7 +45,7 @@ fun LoginScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val isDark = false
+    val isDark = true
 
     val primaryColor = Color(0xFF2196F3)
     val accentColor = primaryColor

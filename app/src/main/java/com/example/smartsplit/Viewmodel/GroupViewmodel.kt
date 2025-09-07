@@ -86,6 +86,40 @@ class GroupViewModel : ViewModel() {
     private val _pendingInvites = MutableLiveData<List<GroupMember>>(emptyList())
     val pendingInvites: LiveData<List<GroupMember>> = _pendingInvites
 
+    // In GroupViewModel.kt
+    data class SharedGroup(
+        val id: String,
+        val name: String,
+        val memberCount: Int
+    )
+
+    private val _sharedGroupsWithFriend = MutableLiveData<List<SharedGroup>>(emptyList())
+    val sharedGroupsWithFriend: LiveData<List<SharedGroup>> = _sharedGroupsWithFriend
+
+    fun fetchSharedGroupsWithFriend(currentUserId: String, friendId: String) {
+        // Query groups where both current user AND friend are members
+        db.collection("groups")
+            .whereArrayContains("members", currentUserId)
+            .whereArrayContains("members", friendId)
+            .get()
+            .addOnSuccessListener { groupsSnapshot ->
+                val sharedGroups = mutableListOf<SharedGroup>()
+                groupsSnapshot.documents.forEach { groupDoc ->
+                    // Get the member count from the members array
+                    val members = groupDoc.get("members") as? List<String> ?: emptyList()
+
+                    sharedGroups.add(SharedGroup(
+                        id = groupDoc.id,
+                        name = groupDoc.getString("name") ?: "Unnamed Group",
+                        memberCount = members.size
+                    ))
+                }
+                _sharedGroupsWithFriend.value = sharedGroups
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Error fetching shared groups: ${e.message}"
+            }
+    }
 
     fun fetchGroupMembers(groupId: String) {
         db.collection("groups").document(groupId)

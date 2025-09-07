@@ -1,16 +1,24 @@
 
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Flight
@@ -27,11 +35,18 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.ExpenseViewModel
@@ -40,9 +55,11 @@ import com.example.smartsplit.Viewmodel.FriendsViewModel
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.Viewmodel.formatDate
 import com.example.smartsplit.Viewmodel.logActivity
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import kotlin.math.atan2
 
 
 val groupTypes = listOf(
@@ -83,13 +100,26 @@ fun NewGroupScreen(
     var group by remember { mutableStateOf<Group?>(null) }
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
-
+    var showUpiDialog by remember { mutableStateOf(false) }
+    var upiIdInput by remember { mutableStateOf("") }
+    var nameInput by remember { mutableStateOf("") }
+    var selectedSettlement by remember { mutableStateOf<com.example.smartsplit.Viewmodel.Settlement?>(null) }
+    val context = LocalContext.current
     val expenses by expenseViewModel.groupExpenses.observeAsState(emptyList())
+    val settlements by expenseViewModel.settlements.observeAsState(emptyList())
+
     LaunchedEffect(groupId) {
         expenseViewModel.fetchGroupExpenses(groupId)
+        expenseViewModel.fetchSettlements(groupId) // Fetch settlements
     }
     // Friends list
     val friends by friendsViewModel.friends.collectAsState()
+// Calculate total spending per member for PieChart
+    val memberExpenses = members.associate { member ->
+        val total = expenses.filter { it.paidBy == member.uid }.sumOf { it.amount }.toFloat()
+        val name = member.email ?: member.uid
+        name to total
+    }.filter { it.value > 0 } // only members who spent something
 
     // Fetch data
     LaunchedEffect(groupId) {
@@ -184,35 +214,58 @@ fun NewGroupScreen(
                 "Members" -> {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(Color.Transparent),
-                        border = BorderStroke(1.dp, Color.Gray)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(Color.White),
+                        elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Members:", fontWeight = FontWeight.SemiBold)
-                            members.forEach { m ->
-                                Text("• ${m.email ?: m.uid}", color = Color.DarkGray, fontSize = 14.sp)
+                            Text(
+                                "Members",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color.Black
+                            )
+
+                            members.forEachIndexed { index, m ->
+                                MemberRow(
+                                    name = m.email ?: m.uid,
+                                    isPending = false
+                                )
+                                if (index != members.lastIndex) {
+                                    Divider(thickness = 0.5.dp, color = Color.LightGray)
+                                }
                             }
 
                             if (pendingInvites.isNotEmpty()) {
-                                Spacer(Modifier.height(8.dp))
-                                Text("Pending Invites:", fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    "Pending Invites",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    color = Color.Gray
+                                )
+
                                 pendingInvites.forEach { m ->
-                                    Text("• ${m.email ?: m.uid} (Pending)", color = Color.Gray, fontSize = 12.sp)
+                                    MemberRow(
+                                        name = m.email ?: m.uid,
+                                        isPending = true
+                                    )
                                 }
                             }
                         }
                     }
 
-                    // 🔹 Only show invite if creator
                     if (group?.createdBy == currentUserEmail) {
-                        Spacer(Modifier.height(52.dp))
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Spacer(Modifier.height(24.dp))
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Button(
                                 onClick = { showInviteDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
@@ -225,9 +278,11 @@ fun NewGroupScreen(
                         }
                     }
                 }
+
                 "Settle up" -> {
-                    val settlements = expenseViewModel.calculateSettlements(expenses)
-                    val mySettlements = settlements.filter { it.from == currentUserId } // 🔹 Only what I owe
+                    val netSettlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
+
+                    val mySettlements = netSettlements.filter { it.from == currentUserId }
 
                     if (mySettlements.isEmpty()) {
                         Card(
@@ -269,13 +324,15 @@ fun NewGroupScreen(
 
                                         Button(
                                             onClick = {
-                                                // 🔹 Later we can add UPI intent here
+                                                selectedSettlement = settlement
+                                                showUpiDialog = true
                                             },
                                             shape = RoundedCornerShape(50),
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
                                         ) {
                                             Text("Pay", color = Color.White)
                                         }
+
                                     }
                                 }
                             }
@@ -284,7 +341,7 @@ fun NewGroupScreen(
                 }
 
                 "Balance" -> {
-                    val settlements = expenseViewModel.calculateSettlements(expenses)
+                    val settlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
 
                     // Group settlements per member
                     val settlementsByMember = members.associate { member ->
@@ -365,30 +422,33 @@ fun NewGroupScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState()), // 🔹 Makes column scrollable
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // 🔹 Group Total Spending Card
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(Color.White),
-                            elevation = CardDefaults.cardElevation(4.dp),
-                            border = BorderStroke(1.dp, Color.Gray)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Group Total Spending", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "₹${"%.2f".format(totalSpending)}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = Color(0xFF2196F3)
-                                )
-                            }
-                        }
+                        if (memberExpenses.isNotEmpty()) {
+                            Text("Spending Distribution", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            val yourShare = expenses
+                                .flatMap { expense ->
+                                    expense.splits.entries.filter { it.key == currentUserId }.map { it.value }
+                                }
+                                .sum()
+                                .toFloat()
 
-                        // 🔹 Cards for each expense
+                            InteractivePieChart(
+                                data = memberExpenses,
+                                yourShare = yourShare,
+                                totalSpending = totalSpending.toFloat(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                            )
+                        }
+                        Text(
+                            "Expense Summary",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                        )
                         expenses.forEach { expense ->
                             val payer = members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
 
@@ -400,25 +460,59 @@ fun NewGroupScreen(
                                 border = BorderStroke(1.dp, Color.LightGray)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(expense.description, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+
+                                    // 🔹 Date Row with Icon
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = "Date",
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = formatDate(expense.createdAt), // ✅ Convert Long -> String
+                                            fontSize = 13.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                    Spacer(Modifier.height(6.dp))
+
+                                    // 🔹 Expense Description
+                                    Text(
+                                        expense.description,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 15.sp
+                                    )
+
                                     Spacer(Modifier.height(4.dp))
+
+                                    // 🔹 Amount
                                     Text(
                                         "₹${"%.2f".format(expense.amount)}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
                                         color = Color(0xFF4CAF50)
                                     )
+
                                     Spacer(Modifier.height(2.dp))
-                                    Text("Paid by $payer", fontSize = 13.sp, color = Color.Gray)
+
+                                    // 🔹 Payer
+                                    Text(
+                                        "Paid by $payer",
+                                        fontSize = 13.sp,
+                                        color = Color.Gray
+                                    )
                                 }
                             }
                         }
+
                     }
+
                 }
-
-
-
-
             }
 
             Spacer(Modifier.height(20.dp))
@@ -437,40 +531,52 @@ fun NewGroupScreen(
             }
         }
 
-        // 🔹 Invite Dialog (Only if creator)
         if (showInviteDialog && group?.createdBy == currentUserEmail) {
             AlertDialog(
                 onDismissRequest = { showInviteDialog = false },
-                title = { Text("Invite Friend to Group") },
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+                title = {
+                    Text(
+                        "Invite Friend to Group",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                },
                 text = {
-                    Column {
-                        Text("Select a friend to invite:")
-                        var expanded by remember { mutableStateOf(false) }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp) // 🔥 Scrollable limit
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "Select a friend to invite:",
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
 
-                        // 🔹 Get only friends NOT already in group or pending
                         val eligibleFriends = friends.filter { friend ->
                             members.none { it.uid == friend.uid } &&
                                     pendingInvites.none { it.uid == friend.uid }
                         }
 
-                        Box {
-                            OutlinedButton(onClick = { expanded = true }) {
-                                Text(
-                                    selectedFriend?.email
-                                        ?: if (eligibleFriends.isEmpty()) "No eligible friends"
-                                        else "Choose Friend"
-                                )
+                        if (eligibleFriends.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("No eligible friends to invite", color = Color.Gray)
                             }
-                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                eligibleFriends.forEach { friend ->
-                                    DropdownMenuItem(
-                                        text = { Text(friend.email) },
-                                        onClick = {
-                                            selectedFriend = friend
-                                            expanded = false
-                                        }
-                                    )
-                                }
+                        } else {
+                            eligibleFriends.forEach { friend ->
+                                FriendItem(
+                                    friend = friend,
+                                    isSelected = selectedFriend?.uid == friend.uid,
+                                    onClick = { selectedFriend = friend }
+                                )
                             }
                         }
                     }
@@ -504,7 +610,6 @@ fun NewGroupScreen(
             )
         }
 
-        // 🔹 Delete Dialog
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
@@ -553,6 +658,89 @@ fun NewGroupScreen(
         }
 
     }
+    if (showUpiDialog && selectedSettlement != null) {
+        val settlement = selectedSettlement!!
+        val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+        val amount = "%.2f".format(settlement.amount)
+
+        AlertDialog(
+            onDismissRequest = { showUpiDialog = false },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = Color(0xFFF5F5F5),
+            title = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Settle Up",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = Color(0xFF2196F3)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "You owe ₹$amount to $toEmail",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "Choose an option to settle this payment:",
+                        fontSize = 14.sp,
+                        color = Color.DarkGray
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // 🔹 Settle Now → Launch UPI
+                        val uri = Uri.parse("upi://pay").buildUpon()
+                            .appendQueryParameter("pa", upiIdInput)
+                            .appendQueryParameter("pn", nameInput.ifBlank { toEmail })
+                            .appendQueryParameter("tn", "Group settlement")
+                            .appendQueryParameter("am", amount)
+                            .appendQueryParameter("cu", "INR")
+                            .build()
+                        val intent = Intent(Intent.ACTION_VIEW).apply { data = uri }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No UPI app found", Toast.LENGTH_SHORT).show()
+                        }
+                        expenseViewModel.markSettlementPaid(settlement, groupId)
+
+                        showUpiDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text("Settle Now", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        // 🔹 Already Settled → Remove from pending immediately
+                        // optional backend call
+                        expenseViewModel.markSettlementPaid(settlement, groupId)
+                        selectedSettlement = null
+                        showUpiDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("Already Settled", color = Color.White)
+                }
+            }
+        )
+    }
+
 
     if (message.isNotEmpty()) {
         LaunchedEffect(message) { Log.d("UI", "Message: $message") }
@@ -573,5 +761,298 @@ fun GroupChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             color = if (isSelected) Color.White else Color.Black
         )
+    }
+}
+@Composable
+fun InteractivePieChart(
+    data: Map<String, Float>,   // member name/email -> amount
+    yourShare: Float,           // Your share of the total spending
+    totalSpending: Float,       // Total group spending
+    modifier: Modifier = Modifier
+) {
+    val total = data.values.sum()
+    var startAngle = 0f
+
+    // State for selected slice
+    var selectedLabel by remember { mutableStateOf<String?>(null) }
+    var selectedAmount by remember { mutableStateOf<Float?>(null) }
+    var selectedPercentage by remember { mutableStateOf<Float?>(null) }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Summary information
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            colors= CardDefaults.cardColors(Color.White),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    "Total Group Spending: ₹${"%.2f".format(totalSpending)}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF2196F3)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Your Share: ₹${"%.2f".format(yourShare)}",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = if (yourShare > 0) Color(0xFFD32F2F) else Color(0xFF2E7D32)
+                )
+                if (totalSpending > 0) {
+                    Text(
+                        "Your Percentage: ${"%.1f".format((yourShare / totalSpending) * 100)}%",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .aspectRatio(1f) // force circle
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(true) {
+                        detectTapGestures { offset ->
+                            // center of canvas
+                            val center = Offset(x = size.width / 2f, y = size.height / 2f)
+                            val dx = offset.x - center.x
+                            val dy = offset.y - center.y
+                            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                            if (angle < 0) angle += 360f
+
+                            // Find which slice contains this angle
+                            var currentStart = 0f
+                            data.entries.forEach { entry ->
+                                val sweep = 360f * (entry.value / total)
+                                if (angle in currentStart..(currentStart + sweep)) {
+                                    selectedLabel = entry.key
+                                    selectedAmount = entry.value
+                                    selectedPercentage = (entry.value / total) * 100f
+                                }
+                                currentStart += sweep
+                            }
+                        }
+                    }
+            ) {
+                // Draw the pie chart
+                data.entries.forEachIndexed { index, entry ->
+                    val sweepAngle = 360 * (entry.value / total)
+                    val color = Color.hsv(
+                        (index * 60) % 360f, // auto-generate distinct colors
+                        0.7f,
+                        0.9f
+                    )
+                    drawArc(
+                        color = color,
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = true,
+                        size = size
+                    )
+                    startAngle += sweepAngle
+                }
+
+                // Draw a white circle in the center to create a donut chart effect
+                drawCircle(
+                    color = Color.White,
+                    radius = size.minDimension / 4,
+                    center = center
+                )
+
+                // Add text in the center showing total
+                drawContext.canvas.nativeCanvas.apply {
+                    drawText(
+                        "₹${"%.2f".format(totalSpending)}",
+                        center.x,
+                        center.y - 10,
+                        android.graphics.Paint().apply {
+                            textSize = 24f
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+                    drawText(
+                        "Total",
+                        center.x,
+                        center.y + 20,
+                        android.graphics.Paint().apply {
+                            textSize = 14f
+                            color = android.graphics.Color.GRAY
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+                }
+            }
+        }
+
+        // Show info when a slice is tapped
+        selectedLabel?.let { label ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Paid by: $label",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Text(
+                        "Amount: ₹${"%.2f".format(selectedAmount)}",
+                        color = Color(0xFF2196F3)
+                    )
+                    Text(
+                        "Share: ${"%.1f".format(selectedPercentage)}%",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        // Legend
+        if (data.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Legend:", fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 150.dp)
+            ) {
+                items(data.entries.toList()) { (name, amount) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    Color.hsv(
+                                        (data.entries.indexOfFirst { it.key == name } * 60) % 360f,
+                                        0.7f,
+                                        0.9f
+                                    ),
+                                    shape = CircleShape
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = name,
+                            modifier = Modifier.weight(1f),
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "₹${"%.2f".format(amount)}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}@Composable
+fun MemberRow(name: String, isPending: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Circle Avatar
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(Color.LightGray, shape = CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = name.firstOrNull()?.uppercase() ?: "?",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color.White
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column {
+            Text(
+                text = name,
+                fontSize = 14.sp,
+                color = if (isPending) Color.Gray else Color.Black,
+                fontStyle = if (isPending) FontStyle.Italic else FontStyle.Normal
+            )
+            if (isPending) {
+                Text(
+                    text = "Pending",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+@Composable
+fun FriendItem(friend: Friend, isSelected: Boolean, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFE3F2FD) else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFF90CAF9), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = friend.email.firstOrNull()?.uppercase() ?: "?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(friend.email, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+            }
+        }
     }
 }
