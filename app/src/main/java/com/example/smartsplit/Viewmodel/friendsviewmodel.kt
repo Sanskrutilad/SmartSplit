@@ -101,6 +101,8 @@ class FriendsViewModel : ViewModel() {
                     return@addSnapshotListener
                 }
 
+                Log.d("FriendsViewModel", "Friends snapshot size: ${snapshot.size()}")
+
                 val tempFriends = mutableListOf<Friend>()
 
                 snapshot.documents.forEach { doc ->
@@ -111,8 +113,8 @@ class FriendsViewModel : ViewModel() {
                         db.collection("users").document(friendId).get()
                             .addOnSuccessListener { userDoc ->
                                 val email = userDoc.getString("email") ?: "Unknown"
-                                val name = userDoc.getString("name") ?: email // fallback to email
-                                tempFriends.add(Friend(uid = friendId, name = name, email = email))
+                                val name = userDoc.getString("display_name") ?: email // Get name or fallback to email
+                                tempFriends.add(Friend(uid = friendId, email = email, name = name))
                                 _friends.value = tempFriends.toList()
                             }
                             .addOnFailureListener {

@@ -21,12 +21,22 @@ data class Expense(
     val createdAt: Long = 0L,
     val splits: Map<String, Double> = emptyMap()
 )
+
 fun formatDate(timestamp: Long): String {
     if (timestamp == 0L) return "No date"
     val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
-data class Settlement(val from: String, val to: String, val amount: Double)
+data class Settlement(
+    val from: String,
+    val to: String,
+    val amount: Double,
+    val paidAmount: Double = 0.0, // Track how much has been paid
+    val id: String = "" // Add ID for tracking
+) {
+    val remainingAmount: Double get() = amount - paidAmount
+    val isFullyPaid: Boolean get() = remainingAmount <= 0.01
+}
 class ExpenseViewModel : ViewModel() {
     private val _paidSettlements = MutableLiveData<List<Settlement>>(emptyList())
     val paidSettlements: LiveData<List<Settlement>> = _paidSettlements
@@ -45,102 +55,94 @@ class ExpenseViewModel : ViewModel() {
     private val _friendExpenses = MutableLiveData<List<FriendExpense>>(emptyList())
     val friendExpenses: LiveData<List<FriendExpense>> = _friendExpenses
     // In ExpenseViewModel
-    data class CombinedExpense(
-        val id: String = "",
-        val description: String = "",
-        val amount: Double = 0.0,
-        val paidBy: String = "",
-        val splitBy: String = "",
-        val createdAt: Long = 0L,
-        val splits: Map<String, Double> = emptyMap(),
-        val type: String = "", // "friend" or "group"
-        val groupId: String? = null, // For group expenses
-        val friendId: String? = null // For friend expenses
-    )
 
-    private val _combinedExpenses = MutableLiveData<List<CombinedExpense>>(emptyList())
-    val combinedExpenses: LiveData<List<CombinedExpense>> = _combinedExpenses
+    fun markSettlementPartiallyPaid(
+        settlement: Settlement,
+        groupId: String,
+        amountPaid: Double,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val settlementsRef = db.collection("groups")
+            .document(groupId)
+            .collection("settlements")
 
-    fun fetchAllExpensesForFriend(currentUserId: String, friendId: String) {
-        val allExpenses = mutableListOf<CombinedExpense>()
+        if (amountPaid <= 0) {
+            _message.value = "Payment amount must be greater than zero"
+            onComplete(false)
+            return
+        }
 
-        // 1. Fetch friend expenses
-        db.collection("users")
-            .document(currentUserId)
-            .collection("friends")
-            .document(friendId)
-            .collection("expenses")
+        if (amountPaid > settlement.remainingAmount) {
+            _message.value = "Payment amount cannot exceed remaining balance"
+            onComplete(false)
+            return
+        }
+
+        // Check if this settlement already exists
+        settlementsRef
+            .whereEqualTo("from", settlement.from)
+            .whereEqualTo("to", settlement.to)
             .get()
-            .addOnSuccessListener { expensesSnapshot ->
-                expensesSnapshot.documents.forEach { doc ->
-                    val expense = doc.toObject(Expense::class.java)
-                    expense?.let {
-                        allExpenses.add(
-                            CombinedExpense(
-                                id = doc.id,
-                                description = it.description,
-                                amount = it.amount,
-                                paidBy = it.paidBy,
-                                splitBy = it.splitBy,
-                                createdAt = it.createdAt,
-                                splits = it.splits,
-                                type = "friend",
-                                friendId = friendId
-                            )
-                        )
-                    }
-                }
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    // New settlement - create with partial payment
+                    val newPaidAmount = amountPaid
+                    val settlementData = hashMapOf(
+                        "from" to settlement.from,
+                        "to" to settlement.to,
+                        "originalAmount" to settlement.amount, // Store original amount
+                        "paidAmount" to newPaidAmount,
+                        "remainingAmount" to (settlement.amount - newPaidAmount),
+                        "lastUpdated" to System.currentTimeMillis(),
+                        "createdAt" to System.currentTimeMillis()
+                    )
 
-                // 2. Fetch all groups current user is in
-                db.collection("groups")
-                    .get()
-                    .addOnSuccessListener { groupsSnapshot ->
-                        groupsSnapshot.documents.forEach { groupDoc ->
-                            val groupId = groupDoc.id
-
-                            // Check if friend is also in this group
-                            db.collection("groups")
-                                .document(groupId)
-                                .collection("members")
-                                .document(friendId)
-                                .get()
-                                .addOnSuccessListener { friendMemberDoc ->
-                                    if (friendMemberDoc.exists()) {
-                                        // Friend is in the group, fetch expenses
-                                        db.collection("groups")
-                                            .document(groupId)
-                                            .collection("expenses")
-                                            .get()
-                                            .addOnSuccessListener { groupExpensesSnapshot ->
-                                                groupExpensesSnapshot.documents.forEach { expenseDoc ->
-                                                    val expense = expenseDoc.toObject(Expense::class.java)
-                                                    expense?.let {
-                                                        if (it.splits.containsKey(friendId) || it.paidBy == friendId) {
-                                                            allExpenses.add(
-                                                                CombinedExpense(
-                                                                    id = expenseDoc.id,
-                                                                    description = it.description,
-                                                                    amount = it.amount,
-                                                                    paidBy = it.paidBy,
-                                                                    splitBy = it.splitBy,
-                                                                    createdAt = it.createdAt,
-                                                                    splits = it.splits,
-                                                                    type = "group",
-                                                                    groupId = groupId
-                                                                )
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                _combinedExpenses.value = allExpenses
-                                            }
-                                    }
-                                }
+                    settlementsRef.add(settlementData)
+                        .addOnSuccessListener {
+                            _message.value = "Partial payment recorded! Remaining: ₹${"%.2f".format(settlement.amount - newPaidAmount)}"
+                            fetchSettlements(groupId)
+                            onComplete(true)
                         }
-                    }
+                        .addOnFailureListener { e ->
+                            _message.value = "Error recording partial payment: ${e.message}"
+                            onComplete(false)
+                        }
+                } else {
+                    // Existing settlement - update the paid amount
+                    val doc = querySnapshot.documents.first()
+                    val currentPaidAmount = doc.getDouble("paidAmount") ?: 0.0
+                    val currentRemainingAmount = doc.getDouble("remainingAmount") ?: settlement.amount
+                    val newPaidAmount = currentPaidAmount + amountPaid
+                    val newRemainingAmount = currentRemainingAmount - amountPaid
+
+                    val updateData = hashMapOf(
+                        "paidAmount" to newPaidAmount,
+                        "remainingAmount" to newRemainingAmount,
+                        "lastUpdated" to System.currentTimeMillis()
+                    )
+
+                    doc.reference.update(updateData as Map<String, Any>)
+                        .addOnSuccessListener {
+                            _message.value = if (newRemainingAmount <= 0.01) {
+                                "Payment completed! Fully settled."
+                            } else {
+                                "Partial payment recorded! Remaining: ₹${"%.2f".format(newRemainingAmount)}"
+                            }
+                            fetchSettlements(groupId)
+                            onComplete(true)
+                        }
+                        .addOnFailureListener { e ->
+                            _message.value = "Error updating payment: ${e.message}"
+                            onComplete(false)
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                _message.value = "Error checking settlement: ${e.message}"
+                onComplete(false)
             }
     }
-// In ExpenseViewModel.kt - Add these methods
 
     data class FriendSettlement(
         val from: String,
@@ -154,62 +156,7 @@ class ExpenseViewModel : ViewModel() {
     private val _friendSettlements = MutableLiveData<List<FriendSettlement>>(emptyList())
     val friendSettlements: LiveData<List<FriendSettlement>> = _friendSettlements
 
-    fun fetchFriendSettlements(currentUserId: String, friendId: String) {
-        val settlementsRef = db.collection("users")
-            .document(currentUserId)
-            .collection("friends")
-            .document(friendId)
-            .collection("settlements")
 
-        settlementsRef.addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                _message.value = "Error fetching friend settlements: ${e.message}"
-                return@addSnapshotListener
-            }
-
-            val settlements = snapshot?.documents?.mapNotNull { doc ->
-                val from = doc.getString("from") ?: ""
-                val to = doc.getString("to") ?: ""
-                val amount = doc.getDouble("amount") ?: 0.0
-                val createdAt = doc.getLong("createdAt") ?: 0L
-                val expenseIds = doc.get("expenseIds") as? List<String> ?: emptyList()
-                FriendSettlement(from, to, amount, createdAt, expenseIds)
-            } ?: emptyList()
-
-            _friendSettlements.value = settlements
-        }
-    }
-
-    fun markFriendSettlementPaid(
-        currentUserId: String,
-        friendId: String,
-        amount: Double,
-        expenseIds: List<String>,
-        onComplete: (Boolean) -> Unit = {}
-    ) {
-        val settlementData = hashMapOf(
-            "from" to currentUserId,
-            "to" to friendId,
-            "amount" to amount,
-            "createdAt" to System.currentTimeMillis(),
-            "expenseIds" to expenseIds
-        )
-
-        db.collection("users")
-            .document(currentUserId)
-            .collection("friends")
-            .document(friendId)
-            .collection("settlements")
-            .add(settlementData)
-            .addOnSuccessListener {
-                _message.value = "Settlement recorded!"
-                onComplete(true)
-            }
-            .addOnFailureListener { e ->
-                _message.value = "Error recording settlement: ${e.message}"
-                onComplete(false)
-            }
-    }
     data class FriendExpense(
         val id: String = "",
         val description: String = "",
@@ -220,78 +167,7 @@ class ExpenseViewModel : ViewModel() {
         val splits: Map<String, Double> = emptyMap(),
         val friendId: String = "" // The friend's UID
     )
-    fun fetchAllFriendExpenses(currentUserId: String) {
-        db.collection("users")
-            .document(currentUserId)
-            .collection("friends")
-            .get()
-            .addOnSuccessListener { friendsSnapshot ->
-                val allExpenses = mutableListOf<FriendExpense>()
-                val friendIds = friendsSnapshot.documents.map { it.id }
 
-                friendIds.forEach { friendId ->
-                    db.collection("users")
-                        .document(currentUserId)
-                        .collection("friends")
-                        .document(friendId)
-                        .collection("expenses")
-                        .get()
-                        .addOnSuccessListener { expensesSnapshot ->
-                            expensesSnapshot.documents.forEach { doc ->
-                                val expense = doc.toObject(Expense::class.java)
-                                expense?.let {
-                                    allExpenses.add(FriendExpense(
-                                        id = doc.id,
-                                        description = it.description,
-                                        amount = it.amount,
-                                        paidBy = it.paidBy,
-                                        splitBy = it.splitBy,
-                                        createdAt = it.createdAt,
-                                        splits = it.splits,
-                                        friendId = friendId
-                                    ))
-                                }
-                            }
-                            _friendExpenses.value = allExpenses
-                        }
-                }
-            }
-    }
-    // Add this function to your ExpenseViewModel class
-    fun fetchFriendExpenses(currentUserId: String, friendId: String) {
-        db.collection("users")
-            .document(currentUserId)
-            .collection("friends")
-            .document(friendId)
-            .collection("expenses")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    _message.value = "Error fetching friend expenses: ${e.message}"
-                    return@addSnapshotListener
-                }
-
-                val expenses = snapshot?.documents?.mapNotNull { doc ->
-                    val expense = doc.toObject(Expense::class.java)
-                    expense?.let {
-                        FriendExpense(
-                            id = doc.id,
-                            description = it.description,
-                            amount = it.amount,
-                            paidBy = it.paidBy,
-                            splitBy = it.splitBy,
-                            createdAt = it.createdAt,
-                            splits = it.splits,
-                            friendId = friendId
-                        )
-                    }
-                } ?: emptyList()
-
-                // Update the friend expenses list
-                val currentExpenses = _friendExpenses.value ?: emptyList()
-                val filteredExpenses = currentExpenses.filter { it.friendId != friendId }
-                _friendExpenses.value = filteredExpenses + expenses
-            }
-    }
     fun fetchSettlements(groupId: String) {
         db.collection("groups")
             .document(groupId)
@@ -305,13 +181,23 @@ class ExpenseViewModel : ViewModel() {
                 val settlementsList = snapshot?.documents?.mapNotNull { doc ->
                     val from = doc.getString("from") ?: ""
                     val to = doc.getString("to") ?: ""
-                    val amount = doc.getDouble("amount") ?: 0.0
-                    Settlement(from, to, amount)
+                    val originalAmount = doc.getDouble("originalAmount") ?: doc.getDouble("amount") ?: 0.0
+                    val paidAmount = doc.getDouble("paidAmount") ?: 0.0
+                    val id = doc.id
+
+                    Settlement(
+                        from = from,
+                        to = to,
+                        amount = originalAmount,
+                        paidAmount = paidAmount,
+                        id = id
+                    )
                 } ?: emptyList()
 
                 _settlements.value = settlementsList
             }
     }
+
     fun fetchPaidSettlements(groupId: String) {
         db.collection("groups")
             .document(groupId)
@@ -460,10 +346,10 @@ class ExpenseViewModel : ViewModel() {
         // Calculate balances from expenses
         val balances = calculateBalances(expenses).toMutableMap()
 
-        // Subtract already settled amounts
+        // Subtract already settled amounts (only the paid portions)
         for (settlement in existingSettlements) {
-            balances[settlement.from] = balances.getOrDefault(settlement.from, 0.0) + settlement.amount
-            balances[settlement.to] = balances.getOrDefault(settlement.to, 0.0) - settlement.amount
+            balances[settlement.from] = balances.getOrDefault(settlement.from, 0.0) + settlement.paidAmount
+            balances[settlement.to] = balances.getOrDefault(settlement.to, 0.0) - settlement.paidAmount
         }
 
         // Now calculate the net settlements needed
@@ -476,7 +362,12 @@ class ExpenseViewModel : ViewModel() {
             val (debtorId, debt) = debtors.removeFirst()
 
             val amount = minOf(credit, -debt)
-            netSettlements.add(Settlement(from = debtorId, to = creditorId, amount = amount))
+            netSettlements.add(Settlement(
+                from = debtorId,
+                to = creditorId,
+                amount = amount,
+                id = "${debtorId}_${creditorId}_${System.currentTimeMillis()}"
+            ))
 
             val newCredit = credit - amount
             val newDebt = debt + amount
@@ -487,49 +378,7 @@ class ExpenseViewModel : ViewModel() {
 
         return netSettlements
     }
-    fun markSettlementPaid(settlement: Settlement, groupId: String, onComplete: (Boolean) -> Unit = {}) {
-        val settlementsRef = db.collection("groups")
-            .document(groupId)
-            .collection("settlements")
 
-        // Check if this settlement already exists to avoid duplicates
-        settlementsRef
-            .whereEqualTo("from", settlement.from)
-            .whereEqualTo("to", settlement.to)
-            .whereEqualTo("amount", settlement.amount)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                if (querySnapshot.isEmpty) {
-                    // Settlement doesn't exist, add it
-                    val settlementData = hashMapOf(
-                        "from" to settlement.from,
-                        "to" to settlement.to,
-                        "amount" to settlement.amount,
-                        "paidAt" to System.currentTimeMillis()
-                    )
-
-                    settlementsRef.add(settlementData)
-                        .addOnSuccessListener {
-                            _message.value = "Settlement recorded!"
-                            fetchSettlements(groupId) // Refresh settlements
-                            onComplete(true)
-                        }
-                        .addOnFailureListener { e ->
-                            _message.value = "Error settling payment: ${e.message}"
-                            onComplete(false)
-                        }
-                } else {
-                    // Settlement already exists
-                    _message.value = "Settlement already recorded!"
-                    fetchSettlements(groupId) // Refresh settlements
-                    onComplete(true)
-                }
-            }
-            .addOnFailureListener { e ->
-                _message.value = "Error checking settlement: ${e.message}"
-                onComplete(false)
-            }
-    }
 
 }
 

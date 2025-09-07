@@ -15,11 +15,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
@@ -43,6 +45,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,9 +111,19 @@ fun NewGroupScreen(
     val expenses by expenseViewModel.groupExpenses.observeAsState(emptyList())
     val settlements by expenseViewModel.settlements.observeAsState(emptyList())
 
+    // Add these state variables at the top of your composable
+    var modifiedAmounts by remember { mutableStateOf(mapOf<String, Double>()) }
+    var showModificationDialog by remember { mutableStateOf(false) }
+    var currentlyEditingSettlement by remember { mutableStateOf<com.example.smartsplit.Viewmodel.Settlement?>(null) }
+    var amountInput by remember { mutableStateOf("") }
+// Add these state variables at the top of your composable
+
+
     LaunchedEffect(groupId) {
         expenseViewModel.fetchGroupExpenses(groupId)
-        expenseViewModel.fetchSettlements(groupId) // Fetch settlements
+        expenseViewModel.fetchSettlements(groupId)
+        // Reset modified amounts when data is refreshed
+        modifiedAmounts = emptyMap()
     }
     // Friends list
     val friends by friendsViewModel.friends.collectAsState()
@@ -278,38 +291,28 @@ fun NewGroupScreen(
                         }
                     }
                 }
-
                 "Settle up" -> {
                     val netSettlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
-
                     val mySettlements = netSettlements.filter { it.from == currentUserId }
 
                     if (mySettlements.isEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(Color(0xFFE8F5E9)), // light green bg
-                            border = BorderStroke(1.dp, Color(0xFF2E7D32))
-                        ) {
-                            Text(
-                                "🎉 You’re all settled up!",
-                                modifier = Modifier.padding(16.dp),
-                                color = Color(0xFF2E7D32),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                        // ... existing code ...
                     } else {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(Color.White),
-                            elevation= CardDefaults.cardElevation(4.dp)
+                            elevation = CardDefaults.cardElevation(4.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text("Your pending settlements:", fontWeight = FontWeight.SemiBold)
 
                                 mySettlements.forEach { settlement ->
                                     val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+                                    val originalAmount = settlement.amount
+                                    val modifiedAmount = modifiedAmounts[settlement.id] ?: originalAmount
+                                    val balance = originalAmount - modifiedAmount
+
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -319,37 +322,54 @@ fun NewGroupScreen(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("Pay to $toEmail", fontWeight = FontWeight.Bold)
-                                            Text("₹${"%.2f".format(settlement.amount)}", color = Color.Red)
+
+                                            // Show both amounts
+                                            if (modifiedAmount != originalAmount) {
+                                                Text(
+                                                    "₹${"%.2f".format(modifiedAmount)} / ₹${"%.2f".format(originalAmount)}",
+                                                    color = Color.Red
+                                                )
+                                                Text(
+                                                    "Balance: ₹${"%.2f".format(balance)}",
+                                                    color = Color.Gray,
+                                                    fontSize = 12.sp
+                                                )
+                                            } else {
+                                                Text("₹${"%.2f".format(originalAmount)}", color = Color.Red)
+                                            }
                                         }
 
+                                        // Pay button only - remove modify button
                                         Button(
                                             onClick = {
                                                 selectedSettlement = settlement
+                                                upiIdInput = "" // Reset UPI input
+                                                nameInput = "" // Reset name input
                                                 showUpiDialog = true
                                             },
                                             shape = RoundedCornerShape(50),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                                            enabled = modifiedAmount > 0
                                         ) {
                                             Text("Pay", color = Color.White)
                                         }
-
                                     }
                                 }
                             }
                         }
                     }
                 }
-
                 "Balance" -> {
-                    val settlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
+                    // Calculate net settlements considering partial payments
+                    val netSettlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
 
                     // Group settlements per member
                     val settlementsByMember = members.associate { member ->
                         val uid = member.uid
                         val email = member.email
 
-                        val owes = settlements.filter { it.from == uid }
-                        val lents = settlements.filter { it.to == uid }
+                        val owes = netSettlements.filter { it.from == uid }
+                        val lents = netSettlements.filter { it.to == uid }
 
                         email to (owes to lents)
                     }
@@ -530,6 +550,7 @@ fun NewGroupScreen(
                 Text("Add expense", color = Color.White)
             }
         }
+// Add this dialog after the UPI dialog
 
         if (showInviteDialog && group?.createdBy == currentUserEmail) {
             AlertDialog(
@@ -661,7 +682,10 @@ fun NewGroupScreen(
     if (showUpiDialog && selectedSettlement != null) {
         val settlement = selectedSettlement!!
         val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
-        val amount = "%.2f".format(settlement.amount)
+        val originalAmount = settlement.amount
+        val currentModifiedAmount = modifiedAmounts[settlement.id] ?: originalAmount
+
+        var amountToPay by remember { mutableStateOf(currentModifiedAmount.toString()) }
 
         AlertDialog(
             onDismissRequest = { showUpiDialog = false },
@@ -677,10 +701,17 @@ fun NewGroupScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "You owe ₹$amount to $toEmail",
+                        "You owe ₹${"%.2f".format(originalAmount)} to $toEmail",
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
+                    if (currentModifiedAmount != originalAmount) {
+                        Text(
+                            "Previous partial payment: ₹${"%.2f".format(originalAmount - currentModifiedAmount)}",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             },
             text = {
@@ -688,60 +719,145 @@ fun NewGroupScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    // Amount input field
+                    OutlinedTextField(
+                        value = amountToPay,
+                        onValueChange = {
+                            if (it.isBlank() || it.toDoubleOrNull() != null) {
+                                amountToPay = it
+                            }
+                        },
+                        label = { Text("Amount to pay (₹)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter amount to pay") }
+                    )
+
+                    // Validation message
+                    val enteredAmount = amountToPay.toDoubleOrNull() ?: 0.0
+                    if (enteredAmount > currentModifiedAmount) {
+                        Text(
+                            "Amount cannot exceed remaining balance",
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    }
+
                     Text(
-                        "Choose an option to settle this payment:",
+                        "Enter UPI ID:",
                         fontSize = 14.sp,
                         color = Color.DarkGray
+                    )
+
+                    OutlinedTextField(
+                        value = upiIdInput,
+                        onValueChange = { upiIdInput = it },
+                        label = { Text("UPI ID (e.g. user@upi)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Receiver Name (optional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        // 🔹 Settle Now → Launch UPI
-                        val uri = Uri.parse("upi://pay").buildUpon()
-                            .appendQueryParameter("pa", upiIdInput)
-                            .appendQueryParameter("pn", nameInput.ifBlank { toEmail })
-                            .appendQueryParameter("tn", "Group settlement")
-                            .appendQueryParameter("am", amount)
-                            .appendQueryParameter("cu", "INR")
-                            .build()
-                        val intent = Intent(Intent.ACTION_VIEW).apply { data = uri }
-                        try {
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "No UPI app found", Toast.LENGTH_SHORT).show()
-                        }
-                        expenseViewModel.markSettlementPaid(settlement, groupId)
-
-                        showUpiDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier.padding(end = 8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Settle Now", color = Color.White)
+                    Button(
+                        onClick = {
+                            val paymentAmount = amountToPay.toDoubleOrNull() ?: 0.0
+                            if (paymentAmount > 0 && paymentAmount <= currentModifiedAmount && upiIdInput.isNotBlank()) {
+                                // Launch UPI payment
+                                val uri = Uri.parse("upi://pay").buildUpon()
+                                    .appendQueryParameter("pa", upiIdInput.trim())
+                                    .appendQueryParameter("pn", nameInput.ifBlank { toEmail })
+                                    .appendQueryParameter("tn", "Group settlement")
+                                    .appendQueryParameter("am", "%.2f".format(paymentAmount))
+                                    .appendQueryParameter("cu", "INR")
+                                    .build()
+
+                                val intent = Intent(Intent.ACTION_VIEW).apply { data = uri }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "No UPI app found", Toast.LENGTH_SHORT).show()
+                                }
+
+                                // Record partial payment
+                                expenseViewModel.markSettlementPartiallyPaid(
+                                    settlement = settlement,
+                                    groupId = groupId,
+                                    amountPaid = paymentAmount
+                                ) { success ->
+                                    if (success) {
+                                        // Update local state
+                                        val newRemaining = currentModifiedAmount - paymentAmount
+                                        modifiedAmounts = if (newRemaining > 0) {
+                                            modifiedAmounts + (settlement.id to newRemaining)
+                                        } else {
+                                            modifiedAmounts - settlement.id
+                                        }
+                                    }
+                                }
+                                showUpiDialog = false
+                            } else {
+                                Toast.makeText(context, "Please enter valid amount and UPI ID", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text("Pay via UPI", color = Color.White)
+                    }
+
+                    Button(
+                        onClick = {
+                            val paymentAmount = amountToPay.toDoubleOrNull() ?: currentModifiedAmount
+                            if (paymentAmount > 0 && paymentAmount <= currentModifiedAmount) {
+                                // Mark as paid without UPI
+                                expenseViewModel.markSettlementPartiallyPaid(
+                                    settlement = settlement,
+                                    groupId = groupId,
+                                    amountPaid = paymentAmount
+                                ) { success ->
+                                    if (success) {
+                                        // Update local state
+                                        val newRemaining = currentModifiedAmount - paymentAmount
+                                        modifiedAmounts = if (newRemaining > 0) {
+                                            modifiedAmounts + (settlement.id to newRemaining)
+                                        } else {
+                                            modifiedAmounts - settlement.id
+                                        }
+                                    }
+                                }
+                                showUpiDialog = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text("Mark as Paid", color = Color.White)
+                    }
                 }
             },
             dismissButton = {
-                Button(
-                    onClick = {
-                        // 🔹 Already Settled → Remove from pending immediately
-                        // optional backend call
-                        expenseViewModel.markSettlementPaid(settlement, groupId)
-                        selectedSettlement = null
-                        showUpiDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(50)
+                TextButton(
+                    onClick = { showUpiDialog = false }
                 ) {
-                    Text("Already Settled", color = Color.White)
+                    Text("Cancel", color = Color.Gray)
                 }
             }
         )
     }
-
-
     if (message.isNotEmpty()) {
         LaunchedEffect(message) { Log.d("UI", "Message: $message") }
     }

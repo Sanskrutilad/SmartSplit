@@ -11,7 +11,7 @@ import androidx.navigation.navArgument
 import com.example.smartsplit.Component.FriendRequestsScreen
 import com.example.smartsplit.LaunchAnimationAppName
 import com.example.smartsplit.screens.Friends.AddFriendScreen
-import com.example.smartsplit.screens.Friends.FriendDetailsScreen
+
 import com.example.smartsplit.screens.Friends.FriendsScreen
 import com.example.smartsplit.screens.Groups.AddExpenseScreen
 import com.example.smartsplit.screens.Homescreen.GroupSectionScreen
@@ -90,13 +90,5 @@ fun AppNavigation() {
         composable("addexpense") {
             AddExpenseScreen(navController = navController)
         }
-        composable("friendDetails/{friendId}") { backStackEntry ->
-            val friendId = backStackEntry.arguments?.getString("friendId") ?: ""
-            FriendDetailsScreen(
-                navController = navController,
-                friendId = friendId
-            )
-        }
-
     }
 }
