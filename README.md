@@ -4,7 +4,7 @@ SmartSplit is a simple and user-friendly expense-sharing app that helps friends,
 With SmartSplit, you can create groups, add expenses, and split bills equally or unequally. 
 The app keeps track of pending balances, so everyone knows who owes what, making money management smooth and transparent.
 
-🚀 Features Done Till Now
+🚀 Features
 
 Modern Authentication Flow: Gradient UI login/signup with full authentication.
 
@@ -12,11 +12,13 @@ Smooth App Entry: Animated splash + interactive onboarding.
 
 Profile Management: User details & account updates.
 
-Groups Section: Exploration & details view (mostly complete).
+Groups Section: Group discovery, creation, and details management.
 
-History Section: Features for group creation, deletion, and expense tracking have been completed.
+Group Overview: Shows total expenses, settlement status, members list, and individual balances.
 
-Friends Section: Functionality for sending friend requests and adding friends has been completed.
+History Section: Tracks group creation, deletion, and expense history.
+
+Friends Section: Sending friend requests, adding friends, and managing friendships.
 
 📱 Screenshots
 
@@ -30,22 +32,15 @@ Friends Section: Functionality for sending friend requests and adding friends ha
 
 <img width="250" height="520" alt="WhatsApp Image 2025-08-21 at 7 46 41 PM" src="https://github.com/user-attachments/assets/6775d64e-9df8-4973-b79f-f1642b6bf65e" />
 
-<img width="250" height="520" alt="Screenshot 2025-08-29 at 9 35 20 PM" src="https://github.com/user-attachments/assets/301b7fa7-dc39-4cf7-898f-248a71da4899" />
-
-<img width="250" height="520" alt="Screenshot 2025-08-25 at 3 51 40 PM" src="https://github.com/user-attachments/assets/e7941978-0704-4d52-98f6-260afb3dca72" />
-
-<img width="250" height="520" alt="Screenshot 2025-08-25 at 3 52 17 PM" src="https://github.com/user-attachments/assets/a8660552-3ddb-4813-9da4-5e6bcbe77615" />
-
-<img width="250" height="520" alt="Screenshot 2025-08-29 at 9 38 41 PM" src="https://github.com/user-attachments/assets/e3793c79-2976-4be6-802a-994a86251b83" />
-
-<img width="250" height="520" alt="Screenshot 2025-09-04 at 12 20 49 AM" src="https://github.com/user-attachments/assets/75553d47-a102-4437-8826-373f14e6f4ba" />
-
-<img width="250" height="520" alt="Screenshot 2025-08-31 at 11 13 31 PM" src="https://github.com/user-attachments/assets/683d607d-7a3f-4122-a59c-30c79fff18a1" />
-
-<img src="https://github.com/user-attachments/assets/5dd03a41-242e-4ee2-a273-48ff36da4ce1" alt="Screenshot 2025-09-01 at 12 20 48 AM" width="250" height="520" />
+<img width="250" height="520" alt="Screenshot 2025-09-08 at 1 14 17 AM" src="https://github.com/user-attachments/assets/e5ed72be-a2d4-41e2-bb11-b8efdb567762" />
 
 <img width="250" height="520" alt="Screenshot 2025-09-03 000831" src="https://github.com/user-attachments/assets/831ca1e8-863f-4c45-b0a7-5c09b04a3a08" />
-<img width="250" height="520" alt="Screenshot 2025-09-05 at 1 00 22 AM" src="https://github.com/user-attachments/assets/8c535d89-dd3c-49f3-ad8c-5725ff4b68c1" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-08 at 1 27 24 AM" src="https://github.com/user-attachments/assets/54f60986-e68e-469f-a3d6-796cdc04aefe" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-08 at 1 19 12 AM" src="https://github.com/user-attachments/assets/0ea7adf6-ca73-45bc-b846-22207ef8ab08" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-08 at 1 20 31 AM" src="https://github.com/user-attachments/assets/02f64baf-9fb7-4282-b650-5ea458c0e01b" />
 
 
 
