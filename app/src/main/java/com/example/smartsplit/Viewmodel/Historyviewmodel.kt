@@ -19,6 +19,20 @@ data class ActivityLog(
     val relatedGroupId: String? = null,
     val userId: String? = null
 )
+enum class ActionType {
+    CREATE,
+    GROUP_DELETED,
+    GROUP_LEFT,
+    EXPENSE_ADDED
+}
+
+// Add these constants for activity types
+object ActivityTypes {
+    const val GROUP_DELETED = "GROUP_DELETED"
+    const val GROUP_LEFT = "GROUP_LEFT"
+    const val EXPENSE_ADDED = "EXPENSE_ADDED"
+    const val GROUP_CREATED = "GROUP_CREATED"
+}
 
 fun logActivity(
     type: String,
@@ -38,7 +52,7 @@ fun logActivity(
         .document(log.id)
         .set(log)
         .addOnSuccessListener {
-            Logger.getGlobal().info("✅ Log added for userId=$userId")
+            Logger.getGlobal().info("✅ Log added for userId=$userId, type=$type")
         }
         .addOnFailureListener { e ->
             Logger.getGlobal().warning("❌ Failed to add log: ${e.message}")

@@ -1,55 +1,42 @@
 package com.example.smartsplit.screens.Homescreen
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Flight
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Work
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,50 +46,82 @@ fun GroupSectionScreen(
     viewModel: GroupViewModel = viewModel()
 ) {
     val myGroups by viewModel.myGroups.observeAsState(emptyList())
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearching by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.fetchMyGroups()
     }
 
+    // Filter groups based on search query
+    val filteredGroups = myGroups.filter { group ->
+        searchQuery.isEmpty() ||
+                group.name.contains(searchQuery, ignoreCase = true) ||
+                group.createdBy.contains(searchQuery, ignoreCase = true) ||
+                group.type.contains(searchQuery, ignoreCase = true)
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "SmartSplit",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0077CC)
-                        )
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Search",
-                            tint = Color(0xFF0077CC)
-                        )
-                    }
-                    IconButton(onClick = { navController.navigate("creategroup") }) {
-                        Icon(
-                            imageVector = Icons.Filled.Group,
-                            contentDescription = "addgroup",
-                            tint = Color(0xFF0077CC)
-                        )
-                    }
-                    IconButton(onClick = { navController.navigate("notification") }) {
-                        Icon(
-                            imageVector = Icons.Filled.Notifications,
-                            contentDescription = "addgroup",
-                            tint = Color(0xFF0077CC)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+            if (isSearching) {
+                SearchTopBar(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    onCloseSearch = {
+                        isSearching = false
+                        searchQuery = ""
+                        focusManager.clearFocus()
+                    },
+                    focusRequester = focusRequester
                 )
-            )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "SmartSplit",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0077CC)
+                            )
+                        )
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            isSearching = true
+                            coroutineScope.launch {
+                                delay(100) // Small delay to ensure the search bar is rendered
+                                focusRequester.requestFocus()
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Search",
+                                tint = Color(0xFF0077CC)
+                            )
+                        }
+                        IconButton(onClick = { navController.navigate("creategroup") }) {
+                            Icon(
+                                imageVector = Icons.Filled.Group,
+                                contentDescription = "addgroup",
+                                tint = Color(0xFF0077CC)
+                            )
+                        }
+                        IconButton(onClick = { navController.navigate("notification") }) {
+                            Icon(
+                                imageVector = Icons.Filled.Notifications,
+                                contentDescription = "addgroup",
+                                tint = Color(0xFF0077CC)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            }
         },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
@@ -146,7 +165,41 @@ fun GroupSectionScreen(
             }
         }
     ) { innerPadding ->
-        if (myGroups.isEmpty()) {
+        if (filteredGroups.isEmpty() && searchQuery.isNotEmpty()) {
+            // Show no results found when searching
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFE6F2FF),
+                                Color(0xFFCCE5FF)
+                            )
+                        )
+                    )
+                    .padding(innerPadding)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "No groups found",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF004C99)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No groups match your search for \"$searchQuery\"",
+                    fontSize = 16.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    lineHeight = 20.sp
+                )
+            }
+        } else if (filteredGroups.isEmpty()) {
+            // Show empty state when no groups exist
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -223,7 +276,7 @@ fun GroupSectionScreen(
                     .padding(innerPadding)
                     .padding(8.dp)
             ) {
-                items(myGroups) { group ->
+                items(filteredGroups) { group ->
                     GroupCard(group = group, onClick = {
                         navController.navigate("GroupOverview/${group.id}")
                     })
@@ -231,6 +284,55 @@ fun GroupSectionScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchTopBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onCloseSearch: () -> Unit,
+    focusRequester: FocusRequester
+) {
+    val focusManager = LocalFocusManager.current
+
+    TopAppBar(
+        title = {
+            TextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = { Text("Find groups by name, admin, or type") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                colors = TextFieldDefaults.textFieldColors(
+                    containerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = { focusManager.clearFocus() }
+                ),
+                singleLine = true
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onCloseSearch) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color(0xFF0077CC)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        )
+    )
 }
 
 @Composable
@@ -297,7 +399,7 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
                     )
                 )
                 Text(
-                    text = group.createdBy,
+                    text = "Admin : ${group.createdBy}",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color.Gray,
                         fontWeight = FontWeight.Medium
@@ -314,4 +416,3 @@ fun GroupCard(group: Group, onClick: () -> Unit) {
         }
     }
 }
-

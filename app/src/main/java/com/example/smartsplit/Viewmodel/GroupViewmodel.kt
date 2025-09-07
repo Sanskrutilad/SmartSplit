@@ -54,7 +54,8 @@ data class Group(
     val id: String = "",
     val name: String = "",
     val type: String = "",
-    val createdBy: String = ""
+    val createdBy: String = "", // This will now store the name
+    val createdByUid: String = "" // Add this to store the UID for reference
 )
 data class GroupMember(
     val uid: String = "",
@@ -62,7 +63,8 @@ data class GroupMember(
     val accepted: Boolean = false,
     val invitedAt: Timestamp? = null,
     val joinedAt: Timestamp? = null,
-    var email: String? = null
+    var email: String? = null,
+    var name: String? = null // Add this field
 )
 
 
@@ -130,12 +132,32 @@ class GroupViewModel : ViewModel() {
                 val members = snapshot?.documents?.mapNotNull { it.toObject(GroupMember::class.java) } ?: emptyList()
 
                 members.forEach { member ->
-                    getUserEmailFromUid(member.uid) { email ->
+                    // Get both email and name from users collection
+                    getUserDetailsFromUid(member.uid) { email, name ->
                         member.email = email
+                        member.name = name ?: email // Fallback to email if name is not available
                         _groupMembers.value = members.filter { it.accepted == true }
                         _pendingInvites.value = members.filter { it.accepted != true }
                     }
                 }
+            }
+    }
+
+    // Helper function to get both email and name
+    private fun getUserDetailsFromUid(uid: String, onResult: (String?, String?) -> Unit) {
+        db.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val email = document.getString("email")
+                    val name = document.getString("display_name") // Assuming you store name as "display_name"
+                    onResult(email, name)
+                } else {
+                    onResult(null, null)
+                }
+            }
+            .addOnFailureListener {
+                onResult(null, null)
             }
     }
 
@@ -203,13 +225,15 @@ class GroupViewModel : ViewModel() {
                         .addOnSuccessListener { memberDoc ->
                             if (memberDoc.exists()) {
                                 val creatorUid = doc.getString("createdBy") ?: ""
-                                getUserEmailFromUid(creatorUid) { email ->
+                                // Get user name instead of email
+                                getUserNameFromUid(creatorUid) { name ->
                                     groups.add(
                                         Group(
                                             id = groupId,
                                             name = doc.getString("name") ?: "",
                                             type = doc.getString("type") ?: "",
-                                            createdBy = email ?: creatorUid
+                                            createdBy = name ?: "Unknown User", // Use name here
+                                            createdByUid = creatorUid // Store UID for reference
                                         )
                                     )
                                     _myGroups.value = groups
@@ -224,17 +248,14 @@ class GroupViewModel : ViewModel() {
             }
     }
 
-
-    /**
-     * Helper: Fetch user email by UID from "users" collection
-     */
-    private fun getUserEmailFromUid(uid: String, onResult: (String?) -> Unit) {
+    private fun getUserNameFromUid(uid: String, onResult: (String?) -> Unit) {
         db.collection("users").document(uid)
             .get()
             .addOnSuccessListener { document ->
                 if (document.exists()) {
-                    val email = document.getString("email")
-                    onResult(email)
+                    // Try to get display_name first, fallback to email if not available
+                    val name = document.getString("display_name") ?: document.getString("email")
+                    onResult(name)
                 } else {
                     onResult(null)
                 }
@@ -251,29 +272,17 @@ class GroupViewModel : ViewModel() {
                 if (doc.exists()) {
                     val createdByUid = doc.getString("createdBy") ?: ""
 
-                    // Fetch user email from users collection
-                    db.collection("users").document(createdByUid)
-                        .get()
-                        .addOnSuccessListener { userDoc ->
-                            val createdByEmail = userDoc.getString("email") ?: createdByUid // fallback to uid
-
-                            val group = Group(
-                                id = doc.id,
-                                name = doc.getString("name") ?: "",
-                                type = doc.getString("type") ?: "",
-                                createdBy = createdByEmail,  // 👈 set email instead of uid
-                            )
-                            onComplete(group)
-                        }
-                        .addOnFailureListener {
-                            val group = Group(
-                                id = doc.id,
-                                name = doc.getString("name") ?: "",
-                                type = doc.getString("type") ?: "",
-                                createdBy = createdByUid, // fallback
-                            )
-                            onComplete(group)
-                        }
+                    // Fetch user name from users collection
+                    getUserNameFromUid(createdByUid) { name ->
+                        val group = Group(
+                            id = doc.id,
+                            name = doc.getString("name") ?: "",
+                            type = doc.getString("type") ?: "",
+                            createdBy = name ?: "Unknown User", // Use name instead of email
+                            createdByUid = createdByUid
+                        )
+                        onComplete(group)
+                    }
                 } else {
                     _message.value = "Group not found"
                     onComplete(null)

@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PeopleOutline
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -52,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.ActivityTypes
 import com.example.smartsplit.Viewmodel.ExpenseViewModel
 import com.example.smartsplit.Viewmodel.Friend
 import com.example.smartsplit.Viewmodel.FriendsViewModel
@@ -130,9 +134,9 @@ fun NewGroupScreen(
 // Calculate total spending per member for PieChart
     val memberExpenses = members.associate { member ->
         val total = expenses.filter { it.paidBy == member.uid }.sumOf { it.amount }.toFloat()
-        val name = member.email ?: member.uid
+        val name = member.name ?: member.email ?: member.uid // Use name, fallback to email, then uid
         name to total
-    }.filter { it.value > 0 } // only members who spent something
+    }.filter { it.value > 0 }
 
     // Fetch data
     LaunchedEffect(groupId) {
@@ -179,35 +183,56 @@ fun NewGroupScreen(
             Spacer(Modifier.height(16.dp))
 
             // Group Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(accentColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Group, contentDescription = "Group", tint = accentColor)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = group?.name ?: "Loading...",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF1976D2).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.People,
+                            contentDescription = "Group",
+                            tint = Color(0xFF1976D2),
+                            modifier = Modifier.size(32.dp)
                         )
-                    )
-                    Text(
-                        text = "Type: ${group?.type ?: "..."}",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
-                    )
-                    Text(
-                        text = "Created by: ${group?.createdBy ?: "..."}",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                    )
+                    }
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            group?.name ?: "Loading...",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        )
+
+                        Text(
+                            text = "Type: ${group?.type ?: "..."}",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray)
+                        )
+
+                        Text(
+                            text = "Created by: ${group?.createdBy ?: "..."}",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                        )
+                    }
                 }
             }
+
+
 
             Spacer(Modifier.height(20.dp))
 
@@ -229,7 +254,7 @@ fun NewGroupScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(Color.White),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -246,7 +271,7 @@ fun NewGroupScreen(
 
                             members.forEachIndexed { index, m ->
                                 MemberRow(
-                                    name = m.email ?: m.uid,
+                                    name = m.name ?: m.email ?: m.uid, // Show name, fallback to email, then uid
                                     isPending = false
                                 )
                                 if (index != members.lastIndex) {
@@ -265,7 +290,7 @@ fun NewGroupScreen(
 
                                 pendingInvites.forEach { m ->
                                     MemberRow(
-                                        name = m.email ?: m.uid,
+                                        name = m.name ?: m.email ?: m.uid, // Show name, fallback to email, then uid
                                         isPending = true
                                     )
                                 }
@@ -296,8 +321,41 @@ fun NewGroupScreen(
                     val mySettlements = netSettlements.filter { it.from == currentUserId }
 
                     if (mySettlements.isEmpty()) {
-                        // ... existing code ...
-                    } else {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(Color(0xFFE8F5E9)), // light green background
+                            elevation = CardDefaults.cardElevation(2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Settled",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "You are all settled up! 🎉",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF388E3C)
+                                )
+                                Text(
+                                    text = "No pending settlements left.",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                    else {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -308,7 +366,8 @@ fun NewGroupScreen(
                                 Text("Your pending settlements:", fontWeight = FontWeight.SemiBold)
 
                                 mySettlements.forEach { settlement ->
-                                    val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+                                    val toName = members.find { it.uid == settlement.to }?.name ?:
+                                    members.find { it.uid == settlement.to }?.email ?: settlement.to
                                     val originalAmount = settlement.amount
                                     val modifiedAmount = modifiedAmounts[settlement.id] ?: originalAmount
                                     val balance = originalAmount - modifiedAmount
@@ -321,7 +380,7 @@ fun NewGroupScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Pay to $toEmail", fontWeight = FontWeight.Bold)
+                                            Text("Pay to $toName", fontWeight = FontWeight.Bold)
 
                                             // Show both amounts
                                             if (modifiedAmount != originalAmount) {
@@ -363,15 +422,10 @@ fun NewGroupScreen(
                     // Calculate net settlements considering partial payments
                     val netSettlements = expenseViewModel.calculateNetSettlements(expenses, settlements)
 
-                    // Group settlements per member
-                    val settlementsByMember = members.associate { member ->
-                        val uid = member.uid
-                        val email = member.email
-
-                        val owes = netSettlements.filter { it.from == uid }
-                        val lents = netSettlements.filter { it.to == uid }
-
-                        email to (owes to lents)
+                    // Helper function to get display name
+                    fun getMemberDisplayName(uid: String): String {
+                        return members.find { it.uid == uid }?.name ?:
+                        members.find { it.uid == uid }?.email ?: uid
                     }
 
                     Column(
@@ -387,34 +441,36 @@ fun NewGroupScreen(
                             modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                         )
 
-                        settlementsByMember.forEach { (email, pair) ->
-                            val (owes, lents) = pair
+                        members.forEach { member ->
+                            val uid = member.uid
+                            val displayName = member.name ?: member.email ?: member.uid
 
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(Color.White),
-                                elevation = CardDefaults.cardElevation(3.dp),
-                                border = BorderStroke(1.dp, Color.LightGray)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    // Member header
-                                    Text(
-                                        email ?: "Unknown",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF1565C0)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
+                            val owes = netSettlements.filter { it.from == uid }
+                            val lents = netSettlements.filter { it.to == uid }
 
-                                    if (owes.isEmpty() && lents.isEmpty()) {
-                                        Text("• Settled up", color = Color.Gray, fontSize = 14.sp)
-                                    } else {
+                            if (owes.isNotEmpty() || lents.isNotEmpty()) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(Color.White),
+                                    elevation = CardDefaults.cardElevation(3.dp),
+                                    border = BorderStroke(1.dp, Color.LightGray)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        // Member header
+                                        Text(
+                                            displayName,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = Color(0xFF1565C0)
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+
                                         // Show owes
                                         owes.forEach { settlement ->
-                                            val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+                                            val toName = getMemberDisplayName(settlement.to)
                                             Text(
-                                                "• Owes to $toEmail: ₹${"%.2f".format(settlement.amount)}",
+                                                "• Owes to $toName: ₹${"%.2f".format(settlement.amount)}",
                                                 color = Color(0xFFD32F2F),
                                                 fontSize = 14.sp
                                             )
@@ -422,9 +478,9 @@ fun NewGroupScreen(
 
                                         // Show lents
                                         lents.forEach { settlement ->
-                                            val fromEmail = members.find { it.uid == settlement.from }?.email ?: settlement.from
+                                            val fromName = getMemberDisplayName(settlement.from)
                                             Text(
-                                                "• Lent from $fromEmail: ₹${"%.2f".format(settlement.amount)}",
+                                                "• Lent from $fromName: ₹${"%.2f".format(settlement.amount)}",
                                                 color = Color(0xFF2E7D32),
                                                 fontSize = 14.sp
                                             )
@@ -470,7 +526,8 @@ fun NewGroupScreen(
                             modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                         )
                         expenses.forEach { expense ->
-                            val payer = members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
+                            val payer = members.find { it.uid == expense.paidBy }?.name ?:
+                            members.find { it.uid == expense.paidBy }?.email ?: expense.paidBy
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -538,7 +595,7 @@ fun NewGroupScreen(
             Spacer(Modifier.height(20.dp))
 
             Button(
-                onClick = { /* Add expense logic */ },
+                onClick = { navController.navigate("addexpense") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -640,6 +697,15 @@ fun NewGroupScreen(
                     TextButton(
                         onClick = {
                             showDeleteDialog = false
+
+                            // Log the group deletion activity
+                            logActivity(
+                                type = ActivityTypes.GROUP_DELETED,
+                                description = "Deleted group: ${group?.name ?: "Loading..."}", // You'll need to pass group name
+                                relatedGroupId = groupId,
+                                userId = FirebaseAuth.getInstance().currentUser?.uid
+                            )
+
                             viewModel.deleteGroup(groupId)
                             navController.popBackStack()
                         }
@@ -663,6 +729,15 @@ fun NewGroupScreen(
                     TextButton(
                         onClick = {
                             showLeaveDialog = false
+
+                            // Log the group leave activity
+                            logActivity(
+                                type = ActivityTypes.GROUP_LEFT,
+                                description = "Left group: ${group?.name ?: "Loading..."}", // You'll need to pass group name
+                                relatedGroupId = groupId,
+                                userId = FirebaseAuth.getInstance().currentUser?.uid
+                            )
+
                             viewModel.leaveGroup(groupId)
                             navController.popBackStack()
                         }
@@ -678,10 +753,13 @@ fun NewGroupScreen(
             )
         }
 
+
+
     }
     if (showUpiDialog && selectedSettlement != null) {
         val settlement = selectedSettlement!!
-        val toEmail = members.find { it.uid == settlement.to }?.email ?: settlement.to
+        val toName = members.find { it.uid == settlement.to }?.name ?:
+        members.find { it.uid == settlement.to }?.email ?: settlement.to
         val originalAmount = settlement.amount
         val currentModifiedAmount = modifiedAmounts[settlement.id] ?: originalAmount
 
@@ -701,7 +779,7 @@ fun NewGroupScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "You owe ₹${"%.2f".format(originalAmount)} to $toEmail",
+                        "You owe ₹${"%.2f".format(originalAmount)} to $toName",
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
@@ -779,7 +857,7 @@ fun NewGroupScreen(
                                 // Launch UPI payment
                                 val uri = Uri.parse("upi://pay").buildUpon()
                                     .appendQueryParameter("pa", upiIdInput.trim())
-                                    .appendQueryParameter("pn", nameInput.ifBlank { toEmail })
+                                    .appendQueryParameter("pn", nameInput.ifBlank { toName })
                                     .appendQueryParameter("tn", "Group settlement")
                                     .appendQueryParameter("am", "%.2f".format(paymentAmount))
                                     .appendQueryParameter("cu", "INR")
@@ -1092,7 +1170,8 @@ fun InteractivePieChart(
             }
         }
     }
-}@Composable
+}
+@Composable
 fun MemberRow(name: String, isPending: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1115,12 +1194,16 @@ fun MemberRow(name: String, isPending: Boolean) {
 
         Spacer(Modifier.width(12.dp))
 
-        Column {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
                 text = name,
                 fontSize = 14.sp,
                 color = if (isPending) Color.Gray else Color.Black,
-                fontStyle = if (isPending) FontStyle.Italic else FontStyle.Normal
+                fontStyle = if (isPending) FontStyle.Italic else FontStyle.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (isPending) {
                 Text(
@@ -1157,17 +1240,25 @@ fun FriendItem(friend: Friend, isSelected: Boolean, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = friend.email.firstOrNull()?.uppercase() ?: "?",
+                    text = friend.name?.firstOrNull()?.uppercase() ?:
+                    friend.email.firstOrNull()?.uppercase() ?: "?", // Use name first
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(Modifier.width(12.dp))
 
             Column {
-                Text(friend.email, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text(friend.name ?: friend.email, fontWeight = FontWeight.Medium, fontSize = 14.sp) // Show name first
+                if (friend.name != null && friend.email != null) {
+                    Text(
+                        friend.email,
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
             }
         }
     }

@@ -34,7 +34,7 @@ import com.example.smartsplit.screens.onboarding.OnboardingScreen3
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "history") {
+    NavHost(navController = navController, startDestination = "splash") {
         composable("Welcomscreen") { Welcomscreen(navController) }
         composable("splash") { LaunchAnimationAppName(navController) }
         composable(

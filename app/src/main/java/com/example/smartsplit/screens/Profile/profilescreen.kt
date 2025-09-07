@@ -197,27 +197,17 @@ fun ProfileScreen(navController: NavController,   viewModel: LoginScreenViewMode
                     textAlign = TextAlign.Center
                 )
 
-
-
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Delete Profile",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().clickable{navController.navigate("deletaccount")}
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "11.13.0 (500004115)",
+                    text = "Keep your expenses clear and your groups stress-free.",
                     fontSize = 13.sp,
-                    color = Color.Gray,
+                    color = Color.Black,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+
 
                 Spacer(modifier = Modifier.height(80.dp))
             }

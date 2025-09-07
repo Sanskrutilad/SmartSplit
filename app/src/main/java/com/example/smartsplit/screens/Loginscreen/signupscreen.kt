@@ -260,31 +260,31 @@ fun SignupScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // 💰 Currency Selection
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Your default currency is $currency.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isDark) darkText else Color.Gray
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "Change »",
-                        color = if (isDark) darkText else Color.Gray,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable {
-                            Log.d("Signup", "Currency picker clicked")
-                        }
-                    )
-                }
+//                // 💰 Currency Selection
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.Center
+//                ) {
+//                    Text(
+//                        text = "Your default currency is $currency.",
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        color = if (isDark) darkText else Color.Gray
+//                    )
+//                    Spacer(Modifier.width(4.dp))
+//                    Text(
+//                        text = "Change »",
+//                        color = if (isDark) darkText else Color.Gray,
+//                        fontWeight = FontWeight.Bold,
+//                        modifier = Modifier.clickable {
+//                            Log.d("Signup", "Currency picker clicked")
+//                        }
+//                    )
+//                }
 
                 Spacer(Modifier.height(20.dp))
 
                 Text(
-                    text = "By signing up, you agree to our Terms of Use and Privacy Policy.",
+                    text = "Sign up today to explore SmartSplit and easily manage shared expenses with friends.",
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
                     color = if (isDark) darkText else Color.Gray,

@@ -27,7 +27,7 @@ import androidx.navigation.NavController
 
 @Composable
 fun DarkModeSettingsScreen(
-    selectedOption: String = "Off",
+    selectedOption: String = "On",
     onOptionSelected: (String) -> Unit = {},
     navController : NavController
 ) {
