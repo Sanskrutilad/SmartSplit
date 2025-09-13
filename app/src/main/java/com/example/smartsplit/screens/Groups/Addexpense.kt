@@ -82,9 +82,6 @@ fun AddExpenseScreen(
     }
     val DarkSurface = Color(0xFFFFFFFF)
     val onSurfaceColor = if (isDark) DarkSurface else Color.White
-
-
-
     // Dark mode colors
     val darkBackground = Color(0xFF121212)
     val darkCard = Color(0xFF1E1E1E)

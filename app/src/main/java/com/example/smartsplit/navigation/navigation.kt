@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.smartsplit.Component.FriendRequestsScreen
+import com.example.smartsplit.Data.ChatScreen
 import com.example.smartsplit.LaunchAnimationAppName
 import com.example.smartsplit.screens.Friends.AddFriendScreen
 
@@ -93,6 +94,9 @@ fun AppNavigation() {
         }
         composable("paytonanyone") {
             paytonanyone()
+        }
+        composable("smartsplitai") {
+            ChatScreen()
         }
     }
 }

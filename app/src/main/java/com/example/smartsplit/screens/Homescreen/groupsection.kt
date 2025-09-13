@@ -210,6 +210,23 @@ fun GroupSectionScreen(
                 )
                 NavigationBarItem(
                     selected = false,
+                    onClick = { navController.navigate("grocery") }, // Create a GroceryScreen route
+                    icon = {
+                        Icon(
+                            Icons.Filled.ShoppingCart,
+                            contentDescription = "Grocery",
+                            tint = if (isDark) darkSecondaryText else primaryColor
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Grocery",
+                            color = if (isDark) darkSecondaryText else primaryColor
+                        )
+                    }
+                )
+                NavigationBarItem(
+                    selected = false,
                     onClick = { navController.navigate("history") },
                     icon = {
                         Icon(
@@ -245,18 +262,35 @@ fun GroupSectionScreen(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("addexpense") },
-                containerColor = Color.White,
-                shape = RoundedCornerShape(50)
+            Column (
+                modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Expense",
-                    tint = if (isDark) darkButtonText else Color.White
-                )
+                FloatingActionButton(
+                    onClick = { navController.navigate("smartsplitai") },
+                    containerColor = Color.White,
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Chat,
+                        contentDescription = "SmartSplit AI",
+                        tint = if (isDark) darkButtonText else Color.Black
+                    )
+                }
+                FloatingActionButton(
+                    onClick = { navController.navigate("addexpense") },
+                    containerColor = Color.White,
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add Expense",
+                        tint = if (isDark) darkButtonText else Color.Black
+                    )
+                }
             }
         }
+
     ) { innerPadding ->
         if (filteredGroups.isEmpty() && searchQuery.isNotEmpty()) {
             // Show no results found when searching
@@ -296,7 +330,6 @@ fun GroupSectionScreen(
                 )
             }
         } else if (filteredGroups.isEmpty()) {
-            // Show empty state when no groups exist
             Column(
                 modifier = Modifier
                     .fillMaxSize()

@@ -102,5 +102,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.2.3")
     implementation("androidx.camera:camera-lifecycle:1.2.3")
     implementation("androidx.camera:camera-view:1.2.3")
+    implementation("io.insert-koin:koin-android:3.4.0")
 
+    implementation("com.google.accompanist:accompanist-navigation-animation:0.34.0")
 }
