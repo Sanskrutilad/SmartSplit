@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.smartsplit.Viewmodel.LoginScreenViewModel
+import com.example.smartsplit.data.BottomNavBar
 import com.example.smartsplit.data.DarkModeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
@@ -104,79 +105,12 @@ fun ProfileScreen(navController: NavController, viewModel: LoginScreenViewModel 
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            NavigationBar(
-                containerColor = if (isDark) darkCard else Color.White
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("Group")},
-                    icon = {
-                        Icon(
-                            Icons.Filled.Group,
-                            contentDescription = "Groups",
-                            tint = if (isDark) darkText else Color.Black
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Groups",
-                            color = if (isDark) darkText else Color.Black
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {navController.navigate("friends") },
-                    icon = {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = "Friends",
-                            tint = if (isDark) darkText else Color.Black
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Friends",
-                            color = if (isDark) darkText else Color.Black
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {navController.navigate("history") },
-                    icon = {
-                        Icon(
-                            Icons.Filled.List,
-                            contentDescription = "Activity",
-                            tint = if (isDark) darkText else Color.Black
-                        )
-                    },
-                    label = {
-                        Text(
-                            "History",
-                            color = if (isDark) darkText else Color.Black
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = true,
-                    onClick = {  },
-                    icon = {
-                        Icon(
-                            Icons.Filled.AccountCircle,
-                            contentDescription = "Account",
-                            tint = if (isDark) darkText else Color.Black
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Account",
-                            color = if (isDark) darkText else Color.Black
-                        )
-                    }
-                )
-            }
-        }
+            BottomNavBar(
+                navController = navController,
+                currentRoute = "profile",
+                isDark = isDark
+            )
+        },
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -189,8 +123,6 @@ fun ProfileScreen(navController: NavController, viewModel: LoginScreenViewModel 
                 )
         ) {
             item {
-
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Profile Image + Name

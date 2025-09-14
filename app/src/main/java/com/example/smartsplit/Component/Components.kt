@@ -2,6 +2,8 @@ package com.example.smartsplit.data
 
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -20,8 +22,21 @@ import javax.inject.Singleton
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.asLiveData
+import androidx.navigation.NavController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.ui.graphics.Color
+
+
 
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -51,7 +66,6 @@ class DataStoreManager @Inject constructor(
         }.first()
     }
 }
-
 
 @HiltViewModel
 class DarkModeViewModel @Inject constructor(
@@ -84,3 +98,101 @@ fun isDarkModeEnabled(): Boolean {
         else -> false
     }
 }
+
+@Composable
+fun BottomNavBar(navController: NavController, currentRoute: String, isDark: Boolean) {
+    // Define colors internally
+    val navBarColor = if (isDark) Color(0xFF121212) else Color.White
+    val textColor = if (isDark) Color(0xFFB0B0B0) else Color.Black
+    val accentColor = Color(0xFF1E88E5) // Blue
+
+    NavigationBar(containerColor = navBarColor) {
+        NavigationBarItem(
+            selected = currentRoute == "group",
+            onClick = { navController.navigate("group") },
+            icon = {
+                Icon(
+                    Icons.Default.Group,
+                    contentDescription = "Groups",
+                    tint = if (currentRoute == "group") accentColor else textColor
+                )
+            },
+            label = {
+                Text(
+                    "Groups",
+                    color = if (currentRoute == "group") accentColor else textColor
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "friends",
+            onClick = { navController.navigate("friends") },
+            icon = {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Friends",
+                    tint = if (currentRoute == "friends") accentColor else textColor
+                )
+            },
+            label = {
+                Text(
+                    "Friends",
+                    color = if (currentRoute == "friends") accentColor else textColor
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "history",
+            onClick = { navController.navigate("history") },
+            icon = {
+                Icon(
+                    Icons.Default.List,
+                    contentDescription = "History",
+                    tint = if (currentRoute == "history") accentColor else textColor
+                )
+            },
+            label = {
+                Text(
+                    "History",
+                    color = if (currentRoute == "history") accentColor else textColor
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "profile",
+            onClick = { navController.navigate("profile") },
+            icon = {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Account",
+                    tint = if (currentRoute == "profile") accentColor else textColor
+                )
+            },
+            label = {
+                Text(
+                    "Account",
+                    color = if (currentRoute == "profile") accentColor else textColor
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "grocery",
+            onClick = { navController.navigate("grocery") },
+            icon = {
+                Icon(
+                    Icons.Default.ShoppingCart,
+                    contentDescription = "Grocery",
+                    tint = if (currentRoute == "grocery") accentColor else textColor
+                )
+            },
+            label = {
+                Text(
+                    "Grocery",
+                    color = if (currentRoute == "grocery") accentColor else textColor
+                )
+            }
+        )
+    }
+}
+
+

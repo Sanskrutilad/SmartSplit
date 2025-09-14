@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.HistoryViewModel
+import com.example.smartsplit.data.BottomNavBar
 import com.example.smartsplit.data.DarkModeViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -68,32 +69,11 @@ fun HistoryScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = if (isDark) darkNavBar else Color.White) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("Group") },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Groups") },
-                    label = { Text("Groups", color = if (isDark) darkText else Color.Black) }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("friends") },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Friends") },
-                    label = { Text("Friends", color = if (isDark) darkText else Color.Black) }
-                )
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { },
-                    icon = { Icon(Icons.Filled.List, contentDescription = "Activity") },
-                    label = { Text("History", color = if (isDark) darkText else accentColor) }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("profile") },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Account") },
-                    label = { Text("Account", color = if (isDark) darkText else Color.Black) }
-                )
-            }
+            BottomNavBar(
+                navController = navController,
+                currentRoute = "history",
+                isDark = isDark
+            )
         },
         containerColor = if (isDark) darkBackground else Color(0xFFE6F2FF)
     ) { innerPadding ->

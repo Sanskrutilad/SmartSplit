@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.smartsplit.Viewmodel.Group
 import com.example.smartsplit.Viewmodel.GroupViewModel
+import com.example.smartsplit.data.BottomNavBar
 import com.example.smartsplit.data.DarkModeViewModel
 import com.example.smartsplit.screens.Friends.DarkOnSurface
 import kotlinx.coroutines.delay
@@ -90,6 +91,7 @@ fun GroupSectionScreen(
 
     // Current theme colors
     val primaryColor = if (isDark) Color.White else lightPrimary
+
     val backgroundColor = if (isDark) darkBackground else lightBackground
     val cardColor = if (isDark) darkCard else lightCard
     val textColor = if (isDark) darkText else lightText
@@ -173,93 +175,11 @@ fun GroupSectionScreen(
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = navBarColor) {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { },
-                    icon = {
-                        Icon(
-                            Icons.Filled.Group,
-                            contentDescription = "Groups",
-                            tint = if (isDark) darkText else primaryColor
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Groups",
-                            color = if (isDark) darkText else primaryColor
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("friends") },
-                    icon = {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = "Friends",
-                            tint = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Friends",
-                            color = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("grocery") }, // Create a GroceryScreen route
-                    icon = {
-                        Icon(
-                            Icons.Filled.ShoppingCart,
-                            contentDescription = "Grocery",
-                            tint = if (isDark) darkSecondaryText else primaryColor
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Grocery",
-                            color = if (isDark) darkSecondaryText else primaryColor
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("history") },
-                    icon = {
-                        Icon(
-                            Icons.Filled.List,
-                            contentDescription = "Activity",
-                            tint = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    },
-                    label = {
-                        Text(
-                            "History",
-                            color = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { navController.navigate("profile") },
-                    icon = {
-                        Icon(
-                            Icons.Filled.AccountCircle,
-                            contentDescription = "Account",
-                            tint = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    },
-                    label = {
-                        Text(
-                            "Account",
-                            color = if (isDark) darkSecondaryText else Color.Gray
-                        )
-                    }
-                )
-            }
+            BottomNavBar(
+                navController = navController,
+                currentRoute = "Group",
+                isDark = isDark
+            )
         },
         floatingActionButton = {
             Column (
@@ -504,7 +424,8 @@ fun GroupCard(
     secondaryTextColor: Color,
     primaryColor: Color
 ) {
-
+    val lightPrimary = Color(0xFF0077CC)
+    val primaryColor1 =  lightPrimary
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -520,12 +441,10 @@ fun GroupCard(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Circle with icon
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(CircleShape)
-                    .background(primaryColor.copy(alpha = if (isDark) 0.2f else 0.1f)),
+                    .background(primaryColor1.copy( 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 val icon = when (group.type.lowercase()) {
@@ -535,11 +454,10 @@ fun GroupCard(
                     "family" -> Icons.Default.Home
                     else -> Icons.Default.List
                 }
-
                 Icon(
                     imageVector = icon,
                     contentDescription = group.type,
-                    tint = primaryColor,
+                    tint = primaryColor1,
                     modifier = Modifier.size(28.dp)
                 )
             }
