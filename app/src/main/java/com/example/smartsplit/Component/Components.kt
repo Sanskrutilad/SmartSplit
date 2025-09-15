@@ -176,19 +176,19 @@ fun BottomNavBar(navController: NavController, currentRoute: String, isDark: Boo
             }
         )
         NavigationBarItem(
-            selected = currentRoute == "grocery",
-            onClick = { navController.navigate("grocery") },
+            selected = currentRoute == "storelist",
+            onClick = { navController.navigate("storelist") },
             icon = {
                 Icon(
                     Icons.Default.ShoppingCart,
                     contentDescription = "Grocery",
-                    tint = if (currentRoute == "grocery") accentColor else textColor
+                    tint = if (currentRoute == "storelist") accentColor else textColor
                 )
             },
             label = {
                 Text(
                     "Grocery",
-                    color = if (currentRoute == "grocery") accentColor else textColor
+                    color = if (currentRoute == "storelist") accentColor else textColor
                 )
             }
         )
