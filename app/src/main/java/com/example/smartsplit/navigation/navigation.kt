@@ -31,6 +31,8 @@ import com.example.smartsplit.screens.history.HistoryScreen
 import com.example.smartsplit.screens.onboarding.OnboardingScreen1
 import com.example.smartsplit.screens.onboarding.OnboardingScreen2
 import com.example.smartsplit.screens.onboarding.OnboardingScreen3
+import com.example.smartsplit.screens.store.ItemsScreen
+import com.example.smartsplit.screens.store.ListDetailScreen
 import com.example.smartsplit.screens.store.MyListsScreen
 
 @Composable
@@ -100,7 +102,13 @@ fun AppNavigation() {
             ChatScreen()
         }
         composable("storelist") {
-            MyListsScreen()
+            MyListsScreen(navController = navController)
+        }
+        composable("additem") {
+            ItemsScreen(navController = navController)
+        }
+        composable("listdetail") {
+            ListDetailScreen(navController = navController)
         }
     }
 }

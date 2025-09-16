@@ -2,10 +2,12 @@ package com.example.smartsplit.screens.store
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -20,6 +22,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 // 🎨 Colors
@@ -34,7 +37,7 @@ val lightGradientBrush = Brush.linearGradient(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyListsScreen() {
+fun MyListsScreen(navController : NavController) {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -44,8 +47,8 @@ fun MyListsScreen() {
             TopAppBar(
                 title = { Text("My lists") },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: Open drawer */ }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    IconButton(onClick = { navController.navigate("Group") }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -71,7 +74,7 @@ fun MyListsScreen() {
                 .padding(padding)
                 .background(lightGradientBrush)
         ) {
-            ListCard(title = "New list", date = "Sep 14 17:51")
+            ListCard(title = "New list", date = "Sep 14 17:51" , navController)
         }
     }
 
@@ -93,10 +96,10 @@ fun MyListsScreen() {
 }
 
 @Composable
-fun ListCard(title: String, date: String) {
+fun ListCard(title: String, date: String , navController : NavController) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().clickable{navController.navigate("listdetail")}
             .padding(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
