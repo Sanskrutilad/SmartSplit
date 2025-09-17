@@ -20,6 +20,11 @@ History Section: Tracks group creation, deletion, and expense history.
 
 Friends Section: Sending friend requests, adding friends, and managing friendships.
 
+Grocery Section: Build shared grocery lists, split items, and track budgets.
+
+SmartSplit AI – Snap receipts, auto-split bills, and get intelligent settlement suggestions.
+
+
 📱 Screenshots
 
 <img width="250" height="520" alt="Screenshot 2025-08-19 003143" src="https://github.com/user-attachments/assets/3a667ff6-6d80-4cd3-a83d-3be981ecedae" />
@@ -41,6 +46,13 @@ Friends Section: Sending friend requests, adding friends, and managing friendshi
 <img width="250" height="520" alt="Screenshot 2025-09-08 at 1 19 12 AM" src="https://github.com/user-attachments/assets/0ea7adf6-ca73-45bc-b846-22207ef8ab08" />
 
 <img width="250" height="520" alt="Screenshot 2025-09-08 at 1 20 31 AM" src="https://github.com/user-attachments/assets/02f64baf-9fb7-4282-b650-5ea458c0e01b" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-18 at 12 54 09 AM" src="https://github.com/user-attachments/assets/83382c40-8147-4e64-9b1e-5df4f90b9d52" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-18 at 12 54 38 AM" src="https://github.com/user-attachments/assets/906472bb-05f2-48d3-ae11-6518eeaa2769" />
+
+<img width="250" height="520" alt="Screenshot 2025-09-18 at 12 55 23 AM" src="https://github.com/user-attachments/assets/0a08c3a2-d773-4036-843c-6d4ea3f32371" />
+
 
 
 
