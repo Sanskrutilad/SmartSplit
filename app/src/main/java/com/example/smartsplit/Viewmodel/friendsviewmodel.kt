@@ -17,8 +17,8 @@ data class FriendRequest(
 
 data class Friend(
     val uid: String = "",
-    val name: String = "",   // user name
-    val email: String = ""   // keep email as before
+    val name: String = "",
+    val email: String = ""
 )
 
 

@@ -62,7 +62,8 @@ fun OnboardingScreen1(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFEBE0))
-            .clickable{navController.navigate("onboardscreen2")}
+            .clickable{navController.navigate("onboardscreen2"){ popUpTo(0) { inclusive = true } // clears entire backstack
+                launchSingleTop = true}}
     ) {
         Image(
             painter = painterResource(id = R.drawable.obimg1),

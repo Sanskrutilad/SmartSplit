@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.example.smartsplit.screens.history.ActionType
 import com.example.smartsplit.screens.history.HistoryItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,39 +66,24 @@ class HistoryViewModel : ViewModel() {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
     init {
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-        if (currentUserId != null) {
-            fetchHistory(currentUserId)
-        }
+        currentUserId?.let { fetchHistory(it) }
     }
 
     private fun fetchHistory(currentUserId: String) {
-        Logger.getGlobal().info("📡 Fetching history for userId=$currentUserId")
-
         db.collection("historyLogs")
             .whereEqualTo("userId", currentUserId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
-                    Logger.getGlobal().warning("❌ Error fetching history: ${error?.message}")
                     _history.value = emptyList()
                     return@addSnapshotListener
                 }
 
-                Logger.getGlobal().info("📡 Got ${snapshot.size()} docs for user=$currentUserId")
-
                 val items = snapshot.documents.mapNotNull { doc ->
-                    Logger.getGlobal().info("🔎 Doc data: ${doc.data}")
-                    // parse item...
                     try {
                         val typeStr = doc.getString("type") ?: "CREATE"
-                        val normalizedType = when (typeStr) {
-                            "GROUP_CREATED" -> "CREATE"
-                            else -> typeStr
-                        }
-                        val type = runCatching { ActionType.valueOf(normalizedType) }
+                        val type = runCatching { ActionType.valueOf(typeStr) }
                             .getOrDefault(ActionType.CREATE)
-
 
                         HistoryItem(
                             id = doc.id,
@@ -106,12 +92,45 @@ class HistoryViewModel : ViewModel() {
                             timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
                             type = type
                         )
-                    } catch (e: Exception) {
-                        Logger.getGlobal().warning("❌ Parse failed for ${doc.id}: ${e.message}")
+                    } catch (_: Exception) {
                         null
                     }
                 }
                 _history.value = items
             }
+    }
+
+    // ✅ Create a new list
+    fun createNewList(listName: String, onComplete: (Boolean) -> Unit) {
+        val uid = currentUserId ?: return
+        val newList = hashMapOf(
+            "userId" to uid,
+            "title" to listName,
+            "createdAt" to System.currentTimeMillis(),
+            "items" to emptyList<String>() // initially empty
+        )
+
+        db.collection("userLists")
+            .add(newList)
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
+    }
+
+    // ✅ Add an item to a specific list
+    fun addItemToList(listId: String, item: String, onComplete: (Boolean) -> Unit) {
+        val listRef = db.collection("userLists").document(listId)
+
+        listRef.update("items", FieldValue.arrayUnion(item))
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
+    }
+
+    // ✅ Remove an item from a list
+    fun removeItemFromList(listId: String, item: String, onComplete: (Boolean) -> Unit) {
+        val listRef = db.collection("userLists").document(listId)
+
+        listRef.update("items", FieldValue.arrayRemove(item))
+            .addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
     }
 }

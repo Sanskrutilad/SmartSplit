@@ -104,11 +104,14 @@ fun AppNavigation() {
         composable("storelist") {
             MyListsScreen(navController = navController)
         }
-        composable("additem") {
-            ItemsScreen(navController = navController)
+        composable("listdetail/{listId}") { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId") ?: ""
+            ListDetailScreen(navController = navController,listId)
         }
-        composable("listdetail") {
-            ListDetailScreen(navController = navController)
+        composable("additem/{listId}") { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId") ?: ""
+            ItemsScreen(navController = navController, listId = listId)
         }
+
     }
 }

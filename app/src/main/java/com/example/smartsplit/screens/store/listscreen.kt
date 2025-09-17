@@ -1,15 +1,14 @@
 package com.example.smartsplit.screens.store
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,9 +20,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.smartsplit.Viewmodel.ListItem
+import com.example.smartsplit.Viewmodel.ListViewModel
 import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.util.Date
 
 // 🎨 Colors
 val lightPrimaryColor = Color(0xFF2196F3)
@@ -37,7 +40,14 @@ val lightGradientBrush = Brush.linearGradient(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyListsScreen(navController : NavController) {
+fun MyListsScreen(navController: NavController, viewModel: ListViewModel = viewModel()) {
+    val lists by viewModel.lists.collectAsState()
+
+
+    LaunchedEffect(lists) {
+        android.util.Log.d("MyListsScreen", "Lists updated: size=${lists.size}, data=$lists")
+    }
+
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -58,10 +68,11 @@ fun MyListsScreen(navController : NavController) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                showBottomSheet = true
-                scope.launch { sheetState.show() }
-            },
+            FloatingActionButton(
+                onClick = {
+                    showBottomSheet = true
+                    scope.launch { sheetState.show() }
+                },
                 containerColor = lightPrimaryColor
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
@@ -74,10 +85,29 @@ fun MyListsScreen(navController : NavController) {
                 .padding(padding)
                 .background(lightGradientBrush)
         ) {
-            ListCard(title = "New list", date = "Sep 14 17:51" , navController)
+            if (lists.isEmpty()) {
+                Text(
+                    "No lists yet. Tap + to create one",
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp),
+                    color = Color.Gray
+                )
+            } else {
+                LazyColumn {
+                    items(lists) { list ->
+                        android.util.Log.d("MyListsScreen", "Rendering list: ${list.id}, ${list.title}")
+                        ListCard(
+                            id = list.id,
+                            title = list.title,
+                            date = DateFormat.getDateTimeInstance().format(Date(list.createdAt)),
+                            navController = navController,
+                            items = list.items // ✅ Pass items so we can show qty & total
+                        )
+                    }
+                }
+
+            }
         }
     }
-
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -87,7 +117,8 @@ fun MyListsScreen(navController : NavController) {
             CreateNewListBottomSheet(
                 onCancel = { showBottomSheet = false },
                 onCreate = { newList ->
-                    // TODO: Add to list state
+                    android.util.Log.d("MyListsScreen", "Creating new list: $newList")
+                    viewModel.createNewList(newList)
                     showBottomSheet = false
                 }
             )
@@ -96,30 +127,45 @@ fun MyListsScreen(navController : NavController) {
 }
 
 @Composable
-fun ListCard(title: String, date: String , navController : NavController) {
+fun ListCard(title: String, date: String, navController: NavController, id: String, items: List<ListItem> = emptyList()) {
+    // ✅ Calculate totals
+    val totalItems = items.sumOf { it.quantity }
+    val totalAmount = items.sumOf { (it.price ?: 0.0) * it.quantity }
+
     Card(
         modifier = Modifier
-            .fillMaxWidth().clickable{navController.navigate("listdetail")}
+            .fillMaxWidth()
+            .clickable { navController.navigate("listdetail/$id") }
             .padding(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Column {
-                Text(title, color = Color.Black, fontWeight = FontWeight.Bold)
-                Text("-", color = Color.Gray)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(title, color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(date, color = Color.Gray, fontSize = MaterialTheme.typography.bodySmall.fontSize)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Items: $totalItems", color = Color.Black)
+                    if (totalAmount > 0) {
+                        Text("₹$totalAmount", color = lightPrimaryColor, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-            Text(date, color = Color.Gray)
         }
     }
 }
+
 
 @Composable
 fun CreateNewListBottomSheet(
@@ -127,8 +173,6 @@ fun CreateNewListBottomSheet(
     onCreate: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("New List Name") }
-
-    // 👇 For keyboard handling
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
